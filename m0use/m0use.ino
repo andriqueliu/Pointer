@@ -62,10 +62,11 @@
 
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
+#define LEFT_CLICK (!DigitalRead(11))
+
 
 // Create IMU object
 Adafruit_BNO055 bno = Adafruit_BNO055();
-
 
 #define BNO055_SAMPLERATE_DELAY_MS (10)
 #define MOVETHRESHOLD (3)
@@ -118,6 +119,10 @@ void setup(void)
   pinMode(13,INPUT);
   pinMode(12,OUTPUT);
   digitalWrite(12,HIGH);
+  
+  // Left click button
+  pinMode(11, INPUT);
+  
   count = 0;
   // Uncomment this when ready to use
   // Gesture Mode button input
@@ -209,25 +214,31 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-
-    // Reset BNO055 chip
-    if (digitalRead(13) == LOW) {
-      /*
-      ble.println("AT+BLEHIDMOUSEMOVE=1,0");
-      ble.waitForOK();
-      */
-      digitalWrite(12, LOW);
-      digitalWrite(12, HIGH);
-      bno.begin();  
-    }
-
+  
+  // Reset BNO055 chip
+  if (digitalRead(13) == LOW) {
+    /*
+    ble.println("AT+BLEHIDMOUSEMOVE=1,0");
+    ble.waitForOK();
+    */
+    digitalWrite(12, LOW);
+    digitalWrite(12, HIGH);
+    bno.begin();  
+  }
+  
   process_move();
   
   //delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
 /*
+ * process_move determines the direction and magnitude of mouse movement.
  * 
+ * Inputs:
+ * None
+ * 
+ * Returns:
+ * None
  */
 void process_move(void)
 {    
@@ -257,19 +268,19 @@ void process_move(void)
 
   // Control y-axis movement using pitch
   if (move_y <= MOVETHRESHOLD && move_y  >= -MOVETHRESHOLD) {
-      move_y = 0;
+    move_y = 0;
   } else if (move_y > MOVETHRESHOLD) {
-      if (move_y > MAXMOVE+MOVETHRESHOLD) {
-          move_y = MAXMOVE;
-      } else {
-          move_y -=MOVETHRESHOLD;
-      }
+    if (move_y > MAXMOVE+MOVETHRESHOLD) {
+        move_y = MAXMOVE;
+    } else {
+        move_y -=MOVETHRESHOLD;
+    }
   } else {
-      if (move_y < -MAXMOVE-MOVETHRESHOLD) {
-          move_y = -MAXMOVE;
-      } else {
-          move_y+=MOVETHRESHOLD;
-      }
+    if (move_y < -MAXMOVE-MOVETHRESHOLD) {
+        move_y = -MAXMOVE;
+    } else {
+        move_y+=MOVETHRESHOLD;
+    }
   }
   
   // Transmit AT command for mouse movement
@@ -301,37 +312,36 @@ int16_t normalize(int16_t value)
 /*
  * 
  */
- /*
 void process_click(void)
 {
 //    static bool preRightClick = false;
-    
-    String base = "AT+BLEHIDMOUSEBUTTON=";
-    
-    if (left_click == 0) {
+  
+  String base = "AT+BLEHIDMOUSEBUTTON=";
+  
+  if (LEFT_CLICK) {
 //        mouse.press(MOUSE_LEFT);
-        base = base + "L";
-    } else {
+    base = base + "L";
+  } else {
 //        mouse.release(MOUSE_LEFT);
-        base = base + "0";
-    }
-    
-    // This approach might not work. What might need to be done is to assume that 
-    // the M0 will maintain the last sent mouse command, and you need to keep track
-    // of the PREVIOUS command, only sending a command when the curr. != prev.
-    ble.println(base);
-    ble.waitForOK();
-    
-    // Test whether left mouse click works first
+    base = base + "0";
+  }
+  
+  // This approach might not work. What might need to be done is to assume that 
+  // the M0 will maintain the last sent mouse command, and you need to keep track
+  // of the PREVIOUS command, only sending a command when the curr. != prev.
+  ble.println(base);
+  ble.waitForOK();
+  
+  // Test whether left mouse click works first
 //    // Right Mouse Click  ___  Falling Edge Detection
 //    if (right_click == 0 && preRightClick == false) {  
 //        preRightClick = true;
 //    } else if (right_click == 1 && preRightClick == true) {
 //        preRightClick = false;
 //        mouse.click(MOUSE_RIGHT);
-//    }    
+//    }
 }
-*/
+
 /*
  * 
  */
