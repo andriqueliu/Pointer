@@ -62,7 +62,7 @@
 
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
-#define LEFT_CLICK (!DigitalRead(11))
+#define LEFT_CLICK (!digitalRead(11))
 
 
 // Create IMU object
@@ -122,7 +122,7 @@ void setup(void)
   
   // Left click button
   pinMode(11, INPUT);
-  
+  pinMode(10, INPUT);
   count = 0;
   // Uncomment this when ready to use
   // Gesture Mode button input
@@ -225,8 +225,10 @@ void loop(void)
     digitalWrite(12, HIGH);
     bno.begin();  
   }
-  
+
+  process_click();
   process_move();
+  process_gesture();
   
   //delay(BNO055_SAMPLERATE_DELAY_MS);
 }
@@ -345,7 +347,7 @@ void process_click(void)
 /*
  * 
  */
- /*
+ 
 void process_gesture(void)
 {
     gesture_state curr_gesture_state = GESTURE_START;
@@ -354,7 +356,7 @@ void process_gesture(void)
     int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
     
-    while (GESTURE_MODE) {
+    while (digitalRead(10) == LOW) {
         delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -402,6 +404,7 @@ void process_gesture(void)
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
+        //Serial.println("double swipe worked!");
     }
 }
 
