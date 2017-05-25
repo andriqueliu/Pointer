@@ -23,13 +23,11 @@
 #include "Adafruit_BluefruitLE_UART.h"
 #include "BluefruitConfig.h"
 
-// for imu 
+// For BNO055
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-
-
 
 #define Serial SERIAL_PORT_USBVIRTUAL
 /*=========================================================================
@@ -62,11 +60,6 @@
 #define FACTORYRESET_ENABLE      1
 /*=========================================================================*/
 
-
-
-
-
-
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
 
@@ -78,7 +71,6 @@ Adafruit_BNO055 bno = Adafruit_BNO055();
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (150)
 
-
 // Define enum capturing possible gestures
 typedef enum {
     GESTURE_START,
@@ -86,12 +78,6 @@ typedef enum {
     GESTURE_LEFT,
     GESTURE_DOUBLE_SWIPE
 } gesture_state;
-
-
-
-
-
-
 
 // Create the bluefruit object, either software serial...uncomment these lines
 /*
@@ -112,7 +98,6 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 //                             BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
 //                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
-
 // A small helper
 void error(const __FlashStringHelper*err) {
   Serial.println(err);
@@ -129,34 +114,33 @@ int count;
 /**************************************************************************/
 void setup(void)
 {
-    // BNO055 reset GPIOs
-    pinMode(13,INPUT);
-    pinMode(12,OUTPUT);
-    digitalWrite(12,HIGH);
-    count = 0;
-    // Uncomment this when ready to use
-    // Gesture Mode button input
+  // BNO055 reset GPIOs
+  pinMode(13,INPUT);
+  pinMode(12,OUTPUT);
+  digitalWrite(12,HIGH);
+  count = 0;
+  // Uncomment this when ready to use
+  // Gesture Mode button input
 //    pinMode(INSERTPINHERE, INPUT);
-    
-    // Uncomment this when ready to use
-    // Mouse click button inputs
+  
+  // Uncomment this when ready to use
+  // Mouse click button inputs
 //    pinMode(SOMELEFTCLICKPIN, INPUT);
 //    pinMode(SOMERIGHTCLICKPIN, INPUT);
-     
-    if(!bno.begin())
-    {
-        /* There was a problem detecting the BNO055 ... check your connections */     
+  
+  if(!bno.begin())
+  {
+      /* There was a problem detecting the BNO055 ... check your connections */     
 //        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-        while(1);
-    }
-    
+      while(1);
+  }
+  
   delay(500);
 
   Serial.begin(9600);
 
   Serial.println(F("Adafruit Bluefruit LE"));
   Serial.println(F("-------------------------------------"));
-
 
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
@@ -186,13 +170,11 @@ void setup(void)
     error(F("Could not enable Keyboard"));
   }
 
-
   /* Add or remove service requires a reset */
   Serial.println(F("Performing a SW reset (service changes require a reset): "));
   if (! ble.reset() ) {
     error(F("Couldn't reset??"));
   }
-
 
   /* Disable command echo from Bluefruit */
   ble.echo(false);
@@ -200,8 +182,6 @@ void setup(void)
 //  Serial.println("Requesting Bluefruit info:");
   /* Print Bluefruit information */
   ble.info();
-
-
 }
 
 // Reference: how the mbed schedules tasks
@@ -230,7 +210,7 @@ while (1) {
 void loop(void)
 {
 
-    // Reset chip
+    // Reset BNO055 chip
     if (digitalRead(13) == LOW) {
       /*
       ble.println("AT+BLEHIDMOUSEMOVE=1,0");
@@ -240,19 +220,6 @@ void loop(void)
       digitalWrite(12, HIGH);
       bno.begin();  
     }
-  // Display command prompt
-  //Serial.print(F("AT > "));
-  /*
-  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  Serial.print("X: ");
-  Serial.print(euler.x());
-  Serial.print(" Y: ");
-  Serial.print(euler.y());
-  Serial.print(" Z: ");
-  Serial.print(euler.z());
-  Serial.print("\t\t\n");
-  
-  */
 
   process_move();
   
@@ -264,60 +231,57 @@ void loop(void)
  */
 void process_move(void)
 {    
-    int16_t move_x, move_y;
-    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    move_x = euler.x();
-    move_y = euler.y();
-    //Serial.print("move_x is ");
-    //Serial.print(move_x);
-    //Serial.print("           ");
-    move_x = normalize(move_x);
-    //Serial.print("norm move_x is ");
-    //Serial.println(move_x);
-    
-    // Control x-axis using heading
-    if (move_x <= MOVETHRESHOLD && move_x >= -MOVETHRESHOLD) {
-        move_x = 0;
-    } else if (move_x > MOVETHRESHOLD) {
-        if (move_x > MAXMOVE+MOVETHRESHOLD) {
-            move_x = MAXMOVE;
-        } else {
-            move_x -= MOVETHRESHOLD;
-        }
-    } else {
-        if (move_x < -MAXMOVE-MOVETHRESHOLD) { // !!! CONFIRM: this means -(MAXMOVE - MOVETHRESHOLD)???
-            move_x = -MAXMOVE;
-        } else {
-            move_x += MOVETHRESHOLD;
-        }
-    }
+  int16_t move_x, move_y;
+  
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  move_x = euler.x();
+  move_y = euler.y();
+  move_x = normalize(move_x); 
+  
+  // Control x-axis using heading
+  if (move_x <= MOVETHRESHOLD && move_x >= -MOVETHRESHOLD) {
+      move_x = 0;
+  } else if (move_x > MOVETHRESHOLD) {
+      if (move_x > MAXMOVE+MOVETHRESHOLD) {
+          move_x = MAXMOVE;
+      } else {
+          move_x -= MOVETHRESHOLD;
+      }
+  } else {
+      if (move_x < -MAXMOVE-MOVETHRESHOLD) { // !!! CONFIRM: this means -(MAXMOVE - MOVETHRESHOLD)???
+          move_x = -MAXMOVE;
+      } else {
+          move_x += MOVETHRESHOLD;
+      }
+  }
 
-    // Control y-axis movement using pitch
-    if (move_y <= MOVETHRESHOLD && move_y  >= -MOVETHRESHOLD) {
-        move_y = 0;
-    } else if (move_y > MOVETHRESHOLD) {
-        if (move_y > MAXMOVE+MOVETHRESHOLD) {
-            move_y = MAXMOVE;
-        } else {
-            move_y -=MOVETHRESHOLD;
-        }
-    } else {
-        if (move_y < -MAXMOVE-MOVETHRESHOLD) {
-            move_y = -MAXMOVE;
-        } else {
-            move_y+=MOVETHRESHOLD;
-        }
-    }
-    
-    // Transmit AT command for mouse movement
-    String base = "AT+BLEHIDMOUSEMOVE=";
-    String x = String(move_x);
-    String separate = ",";
-    String y = String(move_y);
-    base = base+x+separate+y;
-    
-    ble.println(base);
-    //ble.waitForOK();
+  // Control y-axis movement using pitch
+  if (move_y <= MOVETHRESHOLD && move_y  >= -MOVETHRESHOLD) {
+      move_y = 0;
+  } else if (move_y > MOVETHRESHOLD) {
+      if (move_y > MAXMOVE+MOVETHRESHOLD) {
+          move_y = MAXMOVE;
+      } else {
+          move_y -=MOVETHRESHOLD;
+      }
+  } else {
+      if (move_y < -MAXMOVE-MOVETHRESHOLD) {
+          move_y = -MAXMOVE;
+      } else {
+          move_y+=MOVETHRESHOLD;
+      }
+  }
+  
+  // Transmit AT command for mouse movement
+  String base = "AT+BLEHIDMOUSEMOVE=";
+  String x = String(move_x);
+  String separate = ",";
+  String y = String(move_y);
+  
+  base = base + x + separate + y;
+  
+  ble.println(base);
+  ble.waitForOK();
 }
 
 /*
@@ -435,18 +399,16 @@ void process_gesture(void)
 /*
  * 
  */
-  
 void tx_keystroke(char key)
 {
-    String base = "AT+BLEKEYBOARD=";
-    
+  String base = "AT+BLEKEYBOARD=";
+  
 //    switch (key) {
 //        
 //    }
-    
-    base = base + key;
-    
-    ble.println(base);
-    //ble.waitForOK();
+  base = base + key;
+  
+  ble.println(base);
+  ble.waitForOK();
 }
 
