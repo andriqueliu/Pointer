@@ -285,6 +285,11 @@ void process_move(void)
     }
   }
   
+  
+  // TESTING: mouse acceleration
+  move_x = process_mouse_accel(move_x);
+  move_y = process_mouse_accel(move_y);
+  
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
   String x = String(move_x);
@@ -309,6 +314,20 @@ int16_t normalize(int16_t value)
     }
     
     return value;
+}
+
+/*
+ * 
+ */
+int16_t process_mouse_accel(int16_t current_move)
+{
+  static int16_t prev_move = current_move;
+  int16_t final_move;
+  
+  final_move = current_move * (current_move - prev_move);
+  prev_move = current_move;
+  
+  return final_move;
 }
 
 /*
