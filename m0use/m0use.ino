@@ -324,7 +324,7 @@ int16_t process_mouse_accel(int16_t current_move)
   static int16_t prev_move = current_move;
   int16_t final_move;
   
-  final_move = current_move * (current_move - prev_move);
+  final_move = current_move * (current_move - prev_move + 1);
   prev_move = current_move;
   
   return final_move;
