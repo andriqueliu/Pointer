@@ -1,3 +1,4 @@
+
 /*********************************************************************
   This is an example for our nRF51822 based Bluefruit LE modules
 
@@ -136,7 +137,7 @@ void setup(void)
   if(!bno.begin())
   {
       /* There was a problem detecting the BNO055 ... check your connections */     
-//        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+      Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
       while(1);
   }
   
@@ -228,9 +229,9 @@ void loop(void)
 
   process_click();
   process_move();
-  process_gesture();
+//  process_gesture();
   
-  //delay(BNO055_SAMPLERATE_DELAY_MS);
+//  delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
 /*
@@ -259,7 +260,8 @@ void process_move(void)
   }
 
   move_x = process_move_x(move_x);
-  move_y = process_move_y(move_y);
+//  move_y = process_move_y(move_y);
+  move_y = -process_move_y(move_y);
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
@@ -299,31 +301,52 @@ int16_t process_move_x(int16_t current_move)
   if (current_move > prev_move_x) {
     diff = current_move - prev_move_x;
   } else {
-    diff = prev_move_x - current_move;
+//    diff = prev_move_x - current_move;
+    diff = -(prev_move_x - current_move);
   }
 
   prev_move_x = current_move;
 
-  return current_move * diff;
+//  return (current_move >> 2) * diff;
+  return diff * 2;
 }
 
 /*
  * 
  */
+//int16_t process_move_y(int16_t current_move)
+//{
+//  static int16_t prev_move_y = current_move;
+//  int16_t diff;
+//
+//  if (current_move > prev_move_y) {
+//    diff = current_move - prev_move_y;
+//  } else {
+//    diff = prev_move_y - current_move;
+//  }
+//
+//  prev_move_y = current_move;
+//
+//  return (current_move >> 2) * diff;
+//}
+
 int16_t process_move_y(int16_t current_move)
 {
   static int16_t prev_move_y = current_move;
+//  int16_t diff, final_move;
   int16_t diff;
 
   if (current_move > prev_move_y) {
     diff = current_move - prev_move_y;
   } else {
-    diff = prev_move_y - current_move;
+//    diff = prev_move_x - current_move;
+    diff = -(prev_move_y - current_move);
   }
 
   prev_move_y = current_move;
 
-  return current_move * diff;
+//  return (current_move >> 2) * diff;
+  return diff * 2;
 }
 
 /*
