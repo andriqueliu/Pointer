@@ -80,7 +80,7 @@ while not done:
         label_center = label.get_rect(center=(res_x / 2, res_y / 2))
         screen.blit(label, label_center)
 
-    # Logic for displaying time and score
+    # Logic for displaying time
     if score < 15:
         if time <= 0:
             screen.fill((red))
