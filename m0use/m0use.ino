@@ -100,10 +100,10 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 //                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
 // A small helper
-void error(const __FlashStringHelper*err) {
-  Serial.println(err);
-  while (1);
-}
+//void error(const __FlashStringHelper*err) {
+//  Serial.println(err);
+//  while (1);
+//}
 
 int count;
 
@@ -142,51 +142,51 @@ void setup(void)
   
   delay(500);
 
-  Serial.begin(9600);
+//  Serial.begin(9600);
 
-  Serial.println(F("Adafruit Bluefruit LE"));
-  Serial.println(F("-------------------------------------"));
+//  Serial.println(F("Adafruit Bluefruit LE"));
+//  Serial.println(F("-------------------------------------"));
 
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
 
   /* Initialise the module */
-  Serial.print(F("Initialising the Bluefruit LE module: "));
+//  Serial.print(F("Initialising the Bluefruit LE module: "));
 
-  if ( !ble.begin(VERBOSE_MODE) )
-  {
-    error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
-  }
-  Serial.println( F("OK!") );
+//  if ( !ble.begin(VERBOSE_MODE) )
+//  {
+//    error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+//  }
+//  Serial.println( F("OK!") );
 
   if ( FACTORYRESET_ENABLE )
   {
     /* Perform a factory reset to make sure everything is in a known state */
-    Serial.println(F("Performing a factory reset: "));
-    if ( ! ble.factoryReset() ) {
-      error(F("Couldn't factory reset"));
-    }
+//    Serial.println(F("Performing a factory reset: "));
+//    if ( ! ble.factoryReset() ) {
+//      error(F("Couldn't factory reset"));
+//    }
   }
 
   /* Enable HID Service */
-  Serial.println(F("Enable HID Service (including Keyboard): "));
+//  Serial.println(F("Enable HID Service (including Keyboard): "));
 
-  if ( !ble.sendCommandCheckOK(F( "AT+BleHIDEn=On" ))) {
-    error(F("Could not enable Keyboard"));
-  }
+//  if ( !ble.sendCommandCheckOK(F( "AT+BleHIDEn=On" ))) {
+//    error(F("Could not enable Keyboard"));
+//  }
 
   /* Add or remove service requires a reset */
-  Serial.println(F("Performing a SW reset (service changes require a reset): "));
-  if (! ble.reset() ) {
-    error(F("Couldn't reset??"));
-  }
+//  Serial.println(F("Performing a SW reset (service changes require a reset): "));
+//  if (! ble.reset() ) {
+//    error(F("Couldn't reset??"));
+//  }
 
   /* Disable command echo from Bluefruit */
-  ble.echo(false);
+//  ble.echo(false);
 
 //  Serial.println("Requesting Bluefruit info:");
   /* Print Bluefruit information */
-  ble.info();
+//  ble.info();
 }
 
 // Reference: how the mbed schedules tasks
