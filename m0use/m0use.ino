@@ -70,7 +70,7 @@ Adafruit_BNO055 bno = Adafruit_BNO055();
 
 #define BNO055_SAMPLERATE_DELAY_MS (10)
 #define MOVETHRESHOLD (3)
-#define MAXMOVE (150)
+#define MAXMOVE (100)
 
 // Define enum capturing possible gestures
 typedef enum {
@@ -250,45 +250,16 @@ void process_move(void)
   move_x = euler.x();
   move_y = euler.y();
   move_x = normalize(move_x); 
-  
-  // Control x-axis using heading
-  if (move_x <= MOVETHRESHOLD && move_x >= -MOVETHRESHOLD) {
-      move_x = 0;
-  } else if (move_x > MOVETHRESHOLD) {
-      if (move_x > MAXMOVE+MOVETHRESHOLD) {
-          move_x = MAXMOVE;
-      } else {
-          move_x -= MOVETHRESHOLD;
-      }
-  } else {
-      if (move_x < -MAXMOVE-MOVETHRESHOLD) { // !!! CONFIRM: this means -(MAXMOVE - MOVETHRESHOLD)???
-          move_x = -MAXMOVE;
-      } else {
-          move_x += MOVETHRESHOLD;
-      }
+
+  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
+    move_x = 0;
+  }
+  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
+    move_y = 0;
   }
 
-  // Control y-axis movement using pitch
-  if (move_y <= MOVETHRESHOLD && move_y  >= -MOVETHRESHOLD) {
-    move_y = 0;
-  } else if (move_y > MOVETHRESHOLD) {
-    if (move_y > MAXMOVE+MOVETHRESHOLD) {
-        move_y = MAXMOVE;
-    } else {
-        move_y -=MOVETHRESHOLD;
-    }
-  } else {
-    if (move_y < -MAXMOVE-MOVETHRESHOLD) {
-        move_y = -MAXMOVE;
-    } else {
-        move_y+=MOVETHRESHOLD;
-    }
-  }
-  
-  
-  // TESTING: mouse acceleration
-  move_x = process_mouse_accel(move_x);
-  move_y = process_mouse_accel(move_y);
+  move_x = process_move_x(move_x);
+  move_y = process_move_y(move_y);
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
@@ -319,15 +290,40 @@ int16_t normalize(int16_t value)
 /*
  * 
  */
-int16_t process_mouse_accel(int16_t current_move)
+int16_t process_move_x(int16_t current_move)
 {
-  static int16_t prev_move = current_move;
-  int16_t final_move;
-  
-  final_move = current_move * (current_move - prev_move + 1);
-  prev_move = current_move;
-  
-  return final_move;
+  static int16_t prev_move_x = current_move;
+//  int16_t diff, final_move;
+  int16_t diff;
+
+  if (current_move > prev_move_x) {
+    diff = current_move - prev_move_x;
+  } else {
+    diff = prev_move_x - current_move;
+  }
+
+  prev_move_x = current_move;
+
+  return current_move * diff;
+}
+
+/*
+ * 
+ */
+int16_t process_move_y(int16_t current_move)
+{
+  static int16_t prev_move_y = current_move;
+  int16_t diff;
+
+  if (current_move > prev_move_y) {
+    diff = current_move - prev_move_y;
+  } else {
+    diff = prev_move_y - current_move;
+  }
+
+  prev_move_y = current_move;
+
+  return current_move * diff;
 }
 
 /*
