@@ -2,8 +2,8 @@ import pygame
 import random
 
 # Screen settings
-res_x = 1920
-res_y = 1080
+res_x = 3840
+res_y = 2160
 
 # Setup for pygame
 pygame.init()
@@ -28,14 +28,14 @@ blank = True
 while not done:
     # Update dot size based on round
     if round == 1:
+        radius = 100
+        diameter = 200
+    elif round == 2:
+        radius = 76
+        diameter = 152
+    else:
         radius = 50
         diameter = 100
-    elif round == 2:
-        radius = 38
-        diameter = 76
-    else:
-        radius = 25
-        diameter = 50
 
     # Get mouse position
     mouse = pygame.mouse.get_pos()
@@ -53,7 +53,7 @@ while not done:
             time -= 1
         if event.type == pygame.QUIT:
             done = True
-        if ((mouse[0] - x)**2 + (mouse[1] - y)**2 <= radius**2) and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if ((mouse[0] - x)**2 + (mouse[1] - y)**2 <= radius**2) and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and dotCount < 5:
             screen.fill((black))
             dotCount += 1
             score += 1
