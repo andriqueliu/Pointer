@@ -53,7 +53,8 @@ while not done:
             time -= 1
         if event.type == pygame.QUIT:
             done = True
-        if ((mouse[0] - x)**2 + (mouse[1] - y)**2 <= radius**2) and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and dotCount < 5:
+        if ((mouse[0] - x)**2 + (mouse[1] - y)**2 <= radius**2) and event.type == pygame.MOUSEBUTTONDOWN and \
+                        event.button == 1 and dotCount < 5:
             screen.fill((black))
             dotCount += 1
             score += 1
