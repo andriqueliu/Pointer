@@ -299,18 +299,20 @@ int16_t process_move_x(int16_t current_move)
   static int16_t prev_diff = 0;
   int16_t current_diff;
 
-  if (current_move > prev_move_x) {
-    current_diff = current_move - prev_move_x;
-  } else {
-//    diff = prev_move_x - current_move;
-    current_diff = -(prev_move_x - current_move);
-  }
+//  if (current_move > prev_move_x) {
+//    current_diff = current_move - prev_move_x;
+//  } else {
+////    diff = prev_move_x - current_move;
+//    current_diff = -(prev_move_x - current_move);
+//  }
+
+  current_diff = current_move - prev_move_x;
 
   prev_move_x = current_move;
   prev_diff = current_diff;
 
 //  return (current_move >> 2) * diff;
-  return (current_diff * 2) * (current_diff * current_diff) * 2;
+  return (current_diff * 2) * ((current_diff * current_diff) * 3);
 }
 
 /*
