@@ -61,18 +61,22 @@
 #define FACTORYRESET_ENABLE      1
 /*=========================================================================*/
 
+//// Define 
+//#ifdef SERIAL_DEBUG
+//#define SERIAL_PRINT(x) printf x
+//#else
+//#define SERIAL_PRINT(x) do {} while (0)
+//#endif
+
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
 #define LEFT_CLICK (!digitalRead(11))
-
-
-// Create IMU object
-Adafruit_BNO055 bno = Adafruit_BNO055();
 
 #define BNO055_SAMPLERATE_DELAY_MS (10)
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
 
+// Constants used to influence mouse movement
 #define CONSTANT_A 3
 #define CONSTANT_B 2
 
@@ -84,24 +88,11 @@ typedef enum {
     GESTURE_DOUBLE_SWIPE
 } gesture_state;
 
-// Create the bluefruit object, either software serial...uncomment these lines
-/*
-  SoftwareSerial bluefruitSS = SoftwareSerial(BLUEFRUIT_SWUART_TXD_PIN, BLUEFRUIT_SWUART_RXD_PIN);
-
-  Adafruit_BluefruitLE_UART ble(bluefruitSS, BLUEFRUIT_UART_MODE_PIN,
-                      BLUEFRUIT_UART_CTS_PIN, BLUEFRUIT_UART_RTS_PIN);
-*/
-
-/* ...or hardware serial, which does not need the RTS/CTS pins. Uncomment this line */
-// Adafruit_BluefruitLE_UART ble(BLUEFRUIT_HWSERIAL_NAME, BLUEFRUIT_UART_MODE_PIN);
+// Create IMU object
+Adafruit_BNO055 bno = Adafruit_BNO055();
 
 /* ...hardware SPI, using SCK/MOSI/MISO hardware SPI pins and then user selected CS/IRQ/RST */
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
-
-/* ...software SPI, using SCK/MOSI/MISO user-defined SPI pins and then user selected CS/IRQ/RST */
-//Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
-//                             BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
-//                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
 // A small helper
 void error(const __FlashStringHelper*err) {
@@ -126,24 +117,19 @@ void setup(void)
   
   // Left click button
   pinMode(11, INPUT);
+  
   pinMode(10, INPUT);
+  
   count = 0;
-  // Uncomment this when ready to use
-  // Gesture Mode button input
-//    pinMode(INSERTPINHERE, INPUT);
-  
-  // Uncomment this when ready to use
-  // Mouse click button inputs
-//    pinMode(SOMELEFTCLICKPIN, INPUT);
-//    pinMode(SOMERIGHTCLICKPIN, INPUT);
-  
+
+  // Hang until connection with BNO055 has been established
   if(!bno.begin())
   {
       /* There was a problem detecting the BNO055 ... check your connections */     
       Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
       while(1);
   }
-  
+
   delay(500);
 
   Serial.begin(9600);
@@ -263,7 +249,6 @@ void process_move(void)
   }
 
   move_x = process_move_x(move_x);
-//  move_y = process_move_y(move_y);
   move_y = -process_move_y(move_y);
   
   // Transmit AT command for mouse movement
@@ -411,7 +396,6 @@ void process_gesture(void)
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
-        //Serial.println("double swipe worked!");
     }
 }
 
