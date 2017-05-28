@@ -61,23 +61,17 @@
 #define FACTORYRESET_ENABLE      1
 /*=========================================================================*/
 
-//// Define 
-//#ifdef SERIAL_DEBUG
-//#define SERIAL_PRINT(x) printf x
-//#else
-//#define SERIAL_PRINT(x) do {} while (0)
-//#endif
-
+// To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
+// Vice-versa to disable Serial printing
 #define DEBUG_SERIAL_BEGIN 0
 //#define DEBUG
-//#define DEBUG 1 // Test this...
 
+// Macros to enable Serial printing based on debug macros:
 #ifdef DEBUG
  #define SERIAL_PRINT(x)  Serial.print(x)
 #else
  #define SERIAL_PRINT(x)
 #endif
-
 #ifdef DEBUG
  #define SERIAL_PRINT_F(x)  Serial.print(F(x))
 #else
