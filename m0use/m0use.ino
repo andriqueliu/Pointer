@@ -79,7 +79,7 @@
 #endif
 
 // Define constraints for operating modes
-#define GESTURE_MODE (!gesture_button)
+#define GESTURE_MODE (!digitalRead(10))
 #define LEFT_CLICK (!digitalRead(11))
 
 // 
@@ -219,33 +219,38 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-  
-  // Reset BNO055 chip
-  if (digitalRead(13) == LOW) {
-    /*
-    ble.println("AT+BLEHIDMOUSEMOVE=1,0");
-    ble.waitForOK();
-    */
-    digitalWrite(12, LOW);
-    digitalWrite(12, HIGH);
-    bno.begin();  
-  }
-
-  process_click();
-  process_move();
-//  process_gesture();
-  
 //  delay(BNO055_SAMPLERATE_DELAY_MS);
+
+  if (!GESTURE_MODE) {
+    process_click();
+//    process_sensitivity();
+    process_move();
+  } else {
+    process_gesture();
+  }
+  
+
+
+  process_reset();
 }
 
 /*
- * process_move determines the direction and magnitude of mouse movement.
  * 
- * Inputs:
- * None
- * 
- * Returns:
- * None
+ */
+void process_reset(void)
+{
+  if (digitalRead(13) == LOW) {
+    // Toggle BNO055's reset input
+    digitalWrite(12, LOW);
+    digitalWrite(12, HIGH);
+
+    // Run the BNO055's initialization sequence
+    bno.begin();  
+  }
+}
+
+/*
+ * Determine the direction and magnitude of mouse movement.
  */
 void process_move(void)
 {    
@@ -279,7 +284,13 @@ void process_move(void)
 }
 
 /*
+ * Normalize a value defined by the default heading convention.
  * 
+ * Heading is defined from 0 to 360 degrees by default; this function redefines
+ * heading to be 0 to 180 and 0 to -180 relative to the initial position.
+ * 
+ * @param value value to be normalized
+ * @return normalized value
  */
 int16_t normalize(int16_t value)
 {
@@ -319,7 +330,10 @@ int16_t process_move_y(int16_t current_move)
 }
 
 /*
+ * Process the state of the mouse buttons and transmit mouse clicks, if
+ * appropriate.
  * 
+ * This function supports left and right mouse clicks.
  */
 void process_click(void)
 {
@@ -328,10 +342,8 @@ void process_click(void)
   String base = "AT+BLEHIDMOUSEBUTTON=";
   
   if (LEFT_CLICK) {
-//        mouse.press(MOUSE_LEFT);
     base = base + "L";
   } else {
-//        mouse.release(MOUSE_LEFT);
     base = base + "0";
   }
   
@@ -352,18 +364,21 @@ void process_click(void)
 }
 
 /*
+ * Initiate Gesture Mode. Then, track the user's movements and determine the
+ * appropriate gesture.
  * 
+ * This function only supports the gestures described in the gesture_state enum.
  */
- 
 void process_gesture(void)
 {
+    // Declare initial gesture
     gesture_state curr_gesture_state = GESTURE_START;
     
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
     
-    while (digitalRead(10) == LOW) {
+    while (GESTURE_MODE) {
         delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -416,7 +431,9 @@ void process_gesture(void)
 
 // !!! Assume this only has to support SPACE for now
 /*
+ * Transmit the character specified by key.
  * 
+ * @param key the key to be transmitted
  */
 void tx_keystroke(char key)
 {
@@ -429,5 +446,18 @@ void tx_keystroke(char key)
   
   ble.println(base);
   ble.waitForOK();
+}
+
+/*
+ * Transmit a keystroke combo: a key along with a modifier
+ * 
+ * How to use:
+ * 
+ * @param key
+ * @param option
+ */
+void tx_key_combo(char key, char option)
+{
+  
 }
 
