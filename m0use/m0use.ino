@@ -116,8 +116,8 @@ void error(const __FlashStringHelper*err) {
 
 // Global Variables:
 
-  constant_a;
-  constant_b;
+int16_t constant_a;
+int16_t constant_b;
 
 
 /**************************************************************************/
@@ -411,6 +411,7 @@ void process_gesture(void)
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
+    int16_t move_z_initial = euler.z();
     
     while (GESTURE_MODE) {
         delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
@@ -418,7 +419,6 @@ void process_gesture(void)
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
         int16_t move_x = euler.x();
         move_x = normalize(move_x);
-
         int16_t move_z = euler.z();
         
         
@@ -428,8 +428,10 @@ void process_gesture(void)
                 curr_gesture_state = GESTURE_RIGHT;
             } else if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_LEFT;
-            } else if (move_z < ) {
-              
+            } else if (move_z > (move_z_initial + MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_ROLL_RIGHT;
+            } else if (move_z < (move_z_initial - MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_ROLL_LEFT;
             }
             // ^^^ Have heading change take priority over roll change!
             break;
@@ -464,6 +466,14 @@ void process_gesture(void)
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
+    } else if (curr_gesture_state = GESTURE_ROLL_RIGHT) {
+      constant_a++;
+      constant_b++;
+    } else if (curr_gesture_state = GESTURE_ROLL_LEFT) {
+      if (constant_a > 1 && constant_b > 1) {
+        constant_a--;
+        constant_b--;
+      }
     }
 }
 
