@@ -88,15 +88,17 @@
 #define MAXMOVE (100)
 
 // Constants used to influence mouse movement
-#define CONSTANT_A 2
-#define CONSTANT_B 2
+//#define CONSTANT_A 2
+//#define CONSTANT_B 2
 
 // Define enum capturing possible gestures
 typedef enum {
     GESTURE_START,
     GESTURE_RIGHT,
     GESTURE_LEFT,
-    GESTURE_DOUBLE_SWIPE
+    GESTURE_DOUBLE_SWIPE,
+    GESTURE_ROLL_RIGHT,
+    GESTURE_ROLL_LEFT
 } gesture_state;
 
 // Create IMU object
@@ -112,7 +114,11 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
-int count;
+// Global Variables:
+
+  constant_a;
+  constant_b;
+
 
 /**************************************************************************/
 /*!
@@ -133,8 +139,9 @@ void setup(void)
 //  pinMode(something, INPUT);
   // Gesture Mode button
   pinMode(10, INPUT);
-  
-  count = 0;
+
+  constant_a = 2;
+  constant_b = 2;
 
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
@@ -313,10 +320,20 @@ int16_t process_move_x(int16_t current_move)
 {
   static int16_t prev_move_x = current_move;
   int16_t current_diff = current_move - prev_move_x;
-
+  int16_t invert = 1;
+  
   prev_move_x = current_move;
 
-  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
+  // Replace constant mult. with shifting! Try that later... First, try ADDING as opposed to multiplying...
+//  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
+  if (current_diff < 0) {
+    invert = -1;
+  } else {
+    invert = 1;
+  }
+
+  // Maybe left shift by the constants instead of multiply??? Might not be fine enough...
+  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
 }
 
 /*
@@ -324,12 +341,27 @@ int16_t process_move_x(int16_t current_move)
  */
 int16_t process_move_y(int16_t current_move)
 {
+//  static int16_t prev_move_y = current_move;
+//  int16_t current_diff = current_move - prev_move_y;
+//
+//  prev_move_y = current_move;
+//
+////  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
+//  return (current_diff * CONSTANT_A) + ((current_diff * current_diff) * CONSTANT_B);
+
   static int16_t prev_move_y = current_move;
   int16_t current_diff = current_move - prev_move_y;
-
+  int16_t invert = 1;
+  
   prev_move_y = current_move;
 
-  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
+  if (current_diff < 0) {
+    invert = -1;
+  } else {
+    invert = 1;
+  }
+
+  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
 }
 
 /*
@@ -386,6 +418,9 @@ void process_gesture(void)
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
         int16_t move_x = euler.x();
         move_x = normalize(move_x);
+
+        int16_t move_z = euler.z();
+        
         
         switch (curr_gesture_state) {
         case GESTURE_START:
@@ -393,6 +428,8 @@ void process_gesture(void)
                 curr_gesture_state = GESTURE_RIGHT;
             } else if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_LEFT;
+            } else if (move_z < ) {
+              
             }
             // ^^^ Have heading change take priority over roll change!
             break;
