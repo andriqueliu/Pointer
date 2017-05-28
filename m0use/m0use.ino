@@ -88,6 +88,7 @@
 #define GESTURE_MODE (!gesture_button)
 #define LEFT_CLICK (!digitalRead(11))
 
+// 
 #define BNO055_SAMPLERATE_DELAY_MS (10)
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
@@ -112,7 +113,8 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 
 // A small helper
 void error(const __FlashStringHelper*err) {
-  Serial.println(err);
+  SERIAL_PRINT(err);
+  SERIAL_PRINT("\n");
   while (1);
 }
 
@@ -141,8 +143,8 @@ void setup(void)
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
   {
-      /* There was a problem detecting the BNO055 ... check your connections */     
-      Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+      /* There was a problem detecting the BNO055 ... check your connections */
+      SERIAL_PRINT("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
       while(1);
   }
 
@@ -171,21 +173,21 @@ void setup(void)
   if ( FACTORYRESET_ENABLE )
   {
     /* Perform a factory reset to make sure everything is in a known state */
-    Serial.println(F("Performing a factory reset: "));
+    SERIAL_PRINT_F("Performing a factory reset: \n");
     if ( ! ble.factoryReset() ) {
       error(F("Couldn't factory reset"));
     }
   }
 
   /* Enable HID Service */
-  Serial.println(F("Enable HID Service (including Keyboard): "));
+  SERIAL_PRINT_F("Enable HID Service (including Keyboard): \n");
 
   if ( !ble.sendCommandCheckOK(F( "AT+BleHIDEn=On" ))) {
     error(F("Could not enable Keyboard"));
   }
 
   /* Add or remove service requires a reset */
-  Serial.println(F("Performing a SW reset (service changes require a reset): "));
+  SERIAL_PRINT_F("Performing a SW reset (service changes require a reset): \n");
   if (! ble.reset() ) {
     error(F("Couldn't reset??"));
   }
@@ -193,7 +195,7 @@ void setup(void)
   /* Disable command echo from Bluefruit */
   ble.echo(false);
 
-//  Serial.println("Requesting Bluefruit info:");
+  SERIAL_PRINT("Requesting Bluefruit info:\n");
   /* Print Bluefruit information */
   ble.info();
 }
