@@ -140,6 +140,7 @@ void setup(void)
   // Gesture Mode button
   pinMode(10, INPUT);
 
+  // Declare initial values of constants A and B
   constant_a = 2;
   constant_b = 2;
 
