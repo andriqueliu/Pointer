@@ -88,8 +88,8 @@
 #define MAXMOVE (100)
 
 // Constants used to influence mouse movement
-#define CONSTANT_A 3
-#define CONSTANT_B 2.5
+#define CONSTANT_A 2
+#define CONSTANT_B 2
 
 // Define enum capturing possible gestures
 typedef enum {
@@ -129,7 +129,9 @@ void setup(void)
   
   // Left click button
   pinMode(11, INPUT);
-  
+  // Right click button
+//  pinMode(something, INPUT);
+  // Gesture Mode button
   pinMode(10, INPUT);
   
   count = 0;
@@ -219,6 +221,7 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
+  // Even a 10 ms delay makes the mouse unusable
 //  delay(BNO055_SAMPLERATE_DELAY_MS);
 
   if (!GESTURE_MODE) {
@@ -229,8 +232,6 @@ void loop(void)
     process_gesture();
   }
   
-
-
   process_reset();
 }
 
@@ -261,6 +262,7 @@ void process_move(void)
   move_y = euler.y();
   move_x = normalize(move_x); 
 
+  // 
   if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
     move_x = 0;
   }
@@ -268,6 +270,7 @@ void process_move(void)
     move_y = 0;
   }
 
+  // 
   move_x = process_move_x(move_x);
   move_y = -process_move_y(move_y);
   
@@ -338,7 +341,6 @@ int16_t process_move_y(int16_t current_move)
 void process_click(void)
 {
 //    static bool preRightClick = false;
-  
   String base = "AT+BLEHIDMOUSEBUTTON=";
   
   if (LEFT_CLICK) {
@@ -389,10 +391,10 @@ void process_gesture(void)
         case GESTURE_START:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
                 curr_gesture_state = GESTURE_RIGHT;
-//            } else if (move_x < -MAXMOVE-MOVETHRESHOLD) { // past left threshold
             } else if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_LEFT;
             }
+            // ^^^ Have heading change take priority over roll change!
             break;
         case GESTURE_LEFT:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
@@ -400,7 +402,6 @@ void process_gesture(void)
             }
             break;
         case GESTURE_RIGHT:
-//            if (move_x < -MAXMOVE-MOVETHRESHOLD) { // past left threshold
             if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
@@ -448,16 +449,16 @@ void tx_keystroke(char key)
   ble.waitForOK();
 }
 
-/*
- * Transmit a keystroke combo: a key along with a modifier
- * 
- * How to use:
- * 
- * @param key
- * @param option
- */
-void tx_key_combo(char key, char option)
-{
-  
-}
+///*
+// * Transmit a keystroke combo: a key along with a modifier
+// * 
+// * How to use:
+// * 
+// * @param key
+// * @param option
+// */
+//void tx_key_combo(char key, char option)
+//{
+//  
+//}
 
