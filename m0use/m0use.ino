@@ -73,6 +73,9 @@ Adafruit_BNO055 bno = Adafruit_BNO055();
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
 
+#define CONSTANT_A 2
+#define CONSTANT_B 3
+
 // Define enum capturing possible gestures
 typedef enum {
     GESTURE_START,
@@ -295,24 +298,11 @@ int16_t normalize(int16_t value)
 int16_t process_move_x(int16_t current_move)
 {
   static int16_t prev_move_x = current_move;
-//  int16_t diff, final_move;
-  static int16_t prev_diff = 0;
-  int16_t current_diff;
-
-//  if (current_move > prev_move_x) {
-//    current_diff = current_move - prev_move_x;
-//  } else {
-////    diff = prev_move_x - current_move;
-//    current_diff = -(prev_move_x - current_move);
-//  }
-
-  current_diff = current_move - prev_move_x;
+  int16_t current_diff = current_move - prev_move_x;
 
   prev_move_x = current_move;
-  prev_diff = current_diff;
 
-//  return (current_move >> 2) * diff;
-  return (current_diff * 2) * ((current_diff * current_diff) * 3);
+  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
 }
 
 /*
@@ -321,19 +311,11 @@ int16_t process_move_x(int16_t current_move)
 int16_t process_move_y(int16_t current_move)
 {
   static int16_t prev_move_y = current_move;
-//  int16_t diff, final_move;
-  int16_t diff;
-
-  if (current_move > prev_move_y) {
-    diff = current_move - prev_move_y;
-  } else {
-//    diff = prev_move_x - current_move;
-    diff = -(prev_move_y - current_move);
-  }
+  int16_t current_diff = current_move - prev_move_y;
 
   prev_move_y = current_move;
 
-  return diff * 2;
+  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
 }
 
 /*
