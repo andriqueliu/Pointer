@@ -73,8 +73,8 @@ Adafruit_BNO055 bno = Adafruit_BNO055();
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
 
-#define CONSTANT_A 2
-#define CONSTANT_B 3
+#define CONSTANT_A 3
+#define CONSTANT_B 2
 
 // Define enum capturing possible gestures
 typedef enum {
