@@ -68,6 +68,22 @@
 //#define SERIAL_PRINT(x) do {} while (0)
 //#endif
 
+#define DEBUG_SERIAL_BEGIN 0
+//#define DEBUG
+//#define DEBUG 1 // Test this...
+
+#ifdef DEBUG
+ #define SERIAL_PRINT(x)  Serial.print(x)
+#else
+ #define SERIAL_PRINT(x)
+#endif
+
+#ifdef DEBUG
+ #define SERIAL_PRINT_F(x)  Serial.print(F(x))
+#else
+ #define SERIAL_PRINT_F(x)
+#endif
+
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
 #define LEFT_CLICK (!digitalRead(11))
@@ -78,7 +94,7 @@
 
 // Constants used to influence mouse movement
 #define CONSTANT_A 3
-#define CONSTANT_B 2
+#define CONSTANT_B 2.5
 
 // Define enum capturing possible gestures
 typedef enum {
@@ -132,23 +148,26 @@ void setup(void)
 
   delay(500);
 
-  Serial.begin(9600);
+  // Below doesn't work with just DEBUG alone, need DEBUG 1... will that work???
+  if (DEBUG_SERIAL_BEGIN) {
+    Serial.begin(9600);
+  }
 
-  Serial.println(F("Adafruit Bluefruit LE"));
-  Serial.println(F("-------------------------------------"));
+  SERIAL_PRINT_F("Adafruit Bluefruit LE\n");
+  SERIAL_PRINT_F("-------------------------------------\n");
 
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
 
   /* Initialise the module */
-  Serial.print(F("Initialising the Bluefruit LE module: "));
+  SERIAL_PRINT_F("Initialising the Bluefruit LE module: ");
 
   if ( !ble.begin(VERBOSE_MODE) )
   {
     error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
   }
-  Serial.println( F("OK!") );
-
+  SERIAL_PRINT_F("OK!\n");
+  
   if ( FACTORYRESET_ENABLE )
   {
     /* Perform a factory reset to make sure everything is in a known state */
