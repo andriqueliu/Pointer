@@ -1,4 +1,3 @@
-
 /*********************************************************************
   This is an example for our nRF51822 based Bluefruit LE modules
 
@@ -61,64 +60,52 @@
 #define FACTORYRESET_ENABLE      1
 /*=========================================================================*/
 
-// To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
-// Vice-versa to disable Serial printing
-#define DEBUG_SERIAL_BEGIN 0
-//#define DEBUG
-
-// Macros to enable Serial printing based on debug macros:
-#ifdef DEBUG
- #define SERIAL_PRINT(x)  Serial.print(x)
-#else
- #define SERIAL_PRINT(x)
-#endif
-#ifdef DEBUG
- #define SERIAL_PRINT_F(x)  Serial.print(F(x))
-#else
- #define SERIAL_PRINT_F(x)
-#endif
-
 // Define constraints for operating modes
-#define GESTURE_MODE (!digitalRead(10))
-#define LEFT_CLICK (!digitalRead(11))
+#define GESTURE_MODE (!gesture_button)
+#define LEFT_CLICK (!digitalRead(13))
 
-// 
+
+// Create IMU object
+Adafruit_BNO055 bno = Adafruit_BNO055();
+
 #define BNO055_SAMPLERATE_DELAY_MS (10)
 #define MOVETHRESHOLD (3)
-#define MAXMOVE (100)
-
-// Constants used to influence mouse movement
-//#define CONSTANT_A 2
-//#define CONSTANT_B 2
+#define MAXMOVE (150)
 
 // Define enum capturing possible gestures
 typedef enum {
     GESTURE_START,
     GESTURE_RIGHT,
     GESTURE_LEFT,
-    GESTURE_DOUBLE_SWIPE,
-    GESTURE_ROLL_RIGHT,
-    GESTURE_ROLL_LEFT
+    GESTURE_DOUBLE_SWIPE
 } gesture_state;
 
-// Create IMU object
-Adafruit_BNO055 bno = Adafruit_BNO055();
+// Create the bluefruit object, either software serial...uncomment these lines
+/*
+  SoftwareSerial bluefruitSS = SoftwareSerial(BLUEFRUIT_SWUART_TXD_PIN, BLUEFRUIT_SWUART_RXD_PIN);
+
+  Adafruit_BluefruitLE_UART ble(bluefruitSS, BLUEFRUIT_UART_MODE_PIN,
+                      BLUEFRUIT_UART_CTS_PIN, BLUEFRUIT_UART_RTS_PIN);
+*/
+
+/* ...or hardware serial, which does not need the RTS/CTS pins. Uncomment this line */
+// Adafruit_BluefruitLE_UART ble(BLUEFRUIT_HWSERIAL_NAME, BLUEFRUIT_UART_MODE_PIN);
 
 /* ...hardware SPI, using SCK/MOSI/MISO hardware SPI pins and then user selected CS/IRQ/RST */
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
+/* ...software SPI, using SCK/MOSI/MISO user-defined SPI pins and then user selected CS/IRQ/RST */
+//Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
+//                             BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
+//                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+
 // A small helper
 void error(const __FlashStringHelper*err) {
-  SERIAL_PRINT(err);
-  SERIAL_PRINT("\n");
+  Serial.println(err);
   while (1);
 }
 
-// Global Variables:
-
-int16_t constant_a;
-int16_t constant_b;
-
+int count;
 
 /**************************************************************************/
 /*!
@@ -129,69 +116,69 @@ int16_t constant_b;
 void setup(void)
 {
   // BNO055 reset GPIOs
-  pinMode(13,INPUT);
-  pinMode(12,OUTPUT);
-  digitalWrite(12,HIGH);
+  pinMode(9,INPUT);
+  pinMode(5,OUTPUT);
+  digitalWrite(5,HIGH);
+  pinMode(13, INPUT);
+  
+  pinMode(12, INPUT);
   
   // Left click button
   pinMode(11, INPUT);
-  // Right click button
-//  pinMode(something, INPUT);
-  // Gesture Mode button
   pinMode(10, INPUT);
-
-  // Declare initial values of constants A and B
-  constant_a = 2;
-  constant_b = 2;
-
-  // Hang until connection with BNO055 has been established
+  count = 0;
+  // Uncomment this when ready to use
+  // Gesture Mode button input
+//    pinMode(INSERTPINHERE, INPUT);
+  
+  // Uncomment this when ready to use
+  // Mouse click button inputs
+//    pinMode(SOMELEFTCLICKPIN, INPUT);
+//    pinMode(SOMERIGHTCLICKPIN, INPUT);
+  Serial.begin(9600); 
   if(!bno.begin())
   {
-      /* There was a problem detecting the BNO055 ... check your connections */
-      SERIAL_PRINT("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+      /* There was a problem detecting the BNO055 ... check your connections */     
+        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
       while(1);
   }
-
+  
   delay(500);
 
-  // Below doesn't work with just DEBUG alone, need DEBUG 1... will that work???
-  if (DEBUG_SERIAL_BEGIN) {
-    Serial.begin(9600);
-  }
 
-  SERIAL_PRINT_F("Adafruit Bluefruit LE\n");
-  SERIAL_PRINT_F("-------------------------------------\n");
+  Serial.println(F("Adafruit Bluefruit LE"));
+  Serial.println(F("-------------------------------------"));
 
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
 
   /* Initialise the module */
-  SERIAL_PRINT_F("Initialising the Bluefruit LE module: ");
+  Serial.print(F("Initialising the Bluefruit LE module: "));
 
   if ( !ble.begin(VERBOSE_MODE) )
   {
     error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
   }
-  SERIAL_PRINT_F("OK!\n");
-  
+  Serial.println( F("OK!") );
+
   if ( FACTORYRESET_ENABLE )
   {
     /* Perform a factory reset to make sure everything is in a known state */
-    SERIAL_PRINT_F("Performing a factory reset: \n");
+    Serial.println(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ) {
       error(F("Couldn't factory reset"));
     }
   }
 
   /* Enable HID Service */
-  SERIAL_PRINT_F("Enable HID Service (including Keyboard): \n");
+  Serial.println(F("Enable HID Service (including Keyboard): "));
 
   if ( !ble.sendCommandCheckOK(F( "AT+BleHIDEn=On" ))) {
     error(F("Could not enable Keyboard"));
   }
 
   /* Add or remove service requires a reset */
-  SERIAL_PRINT_F("Performing a SW reset (service changes require a reset): \n");
+  Serial.println(F("Performing a SW reset (service changes require a reset): "));
   if (! ble.reset() ) {
     error(F("Couldn't reset??"));
   }
@@ -199,7 +186,7 @@ void setup(void)
   /* Disable command echo from Bluefruit */
   ble.echo(false);
 
-  SERIAL_PRINT("Requesting Bluefruit info:\n");
+//  Serial.println("Requesting Bluefruit info:");
   /* Print Bluefruit information */
   ble.info();
 }
@@ -229,37 +216,33 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-  // Even a 10 ms delay makes the mouse unusable
-//  delay(BNO055_SAMPLERATE_DELAY_MS);
-
-  if (!GESTURE_MODE) {
-    process_click();
-//    process_sensitivity();
-    process_move();
-  } else {
-    process_gesture();
-  }
   
-  process_reset();
-}
-
-/*
- * 
- */
-void process_reset(void)
-{
-  if (digitalRead(13) == LOW) {
-    // Toggle BNO055's reset input
-    digitalWrite(12, LOW);
-    digitalWrite(12, HIGH);
-
-    // Run the BNO055's initialization sequence
+  // Reset BNO055 chip
+  if (digitalRead(9) == LOW) {
+    /*
+    ble.println("AT+BLEHIDMOUSEMOVE=1,0");
+    ble.waitForOK();
+    */
+    digitalWrite(5, LOW);
+    digitalWrite(5, HIGH);
     bno.begin();  
   }
+
+  //process_click();
+  //process_move();
+  process_gesture();
+  
+  //delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
 /*
- * Determine the direction and magnitude of mouse movement.
+ * process_move determines the direction and magnitude of mouse movement.
+ * 
+ * Inputs:
+ * None
+ * 
+ * Returns:
+ * None
  */
 void process_move(void)
 {    
@@ -269,18 +252,40 @@ void process_move(void)
   move_x = euler.x();
   move_y = euler.y();
   move_x = normalize(move_x); 
-
-  // 
-  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
-    move_x = 0;
+  
+  // Control x-axis using heading
+  if (move_x <= MOVETHRESHOLD && move_x >= -MOVETHRESHOLD) {
+      move_x = 0;
+  } else if (move_x > MOVETHRESHOLD) {
+      if (move_x > MAXMOVE+MOVETHRESHOLD) {
+          move_x = MAXMOVE;
+      } else {
+          move_x -= MOVETHRESHOLD;
+      }
+  } else {
+      if (move_x < -MAXMOVE-MOVETHRESHOLD) { // !!! CONFIRM: this means -(MAXMOVE - MOVETHRESHOLD)???
+          move_x = -MAXMOVE;
+      } else {
+          move_x += MOVETHRESHOLD;
+      }
   }
-  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
+
+  // Control y-axis movement using pitch
+  if (move_y <= MOVETHRESHOLD && move_y  >= -MOVETHRESHOLD) {
     move_y = 0;
+  } else if (move_y > MOVETHRESHOLD) {
+    if (move_y > MAXMOVE+MOVETHRESHOLD) {
+        move_y = MAXMOVE;
+    } else {
+        move_y -=MOVETHRESHOLD;
+    }
+  } else {
+    if (move_y < -MAXMOVE-MOVETHRESHOLD) {
+        move_y = -MAXMOVE;
+    } else {
+        move_y+=MOVETHRESHOLD;
+    }
   }
-
-  // 
-  move_x = process_move_x(move_x);
-  move_y = -process_move_y(move_y);
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
@@ -295,13 +300,7 @@ void process_move(void)
 }
 
 /*
- * Normalize a value defined by the default heading convention.
  * 
- * Heading is defined from 0 to 360 degrees by default; this function redefines
- * heading to be 0 to 180 and 0 to -180 relative to the initial position.
- * 
- * @param value value to be normalized
- * @return normalized value
  */
 int16_t normalize(int16_t value)
 {
@@ -317,68 +316,17 @@ int16_t normalize(int16_t value)
 /*
  * 
  */
-int16_t process_move_x(int16_t current_move)
-{
-  static int16_t prev_move_x = current_move;
-  int16_t current_diff = current_move - prev_move_x;
-  int16_t invert = 1;
-  
-  prev_move_x = current_move;
-
-  // Replace constant mult. with shifting! Try that later... First, try ADDING as opposed to multiplying...
-//  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-  if (current_diff < 0) {
-    invert = -1;
-  } else {
-    invert = 1;
-  }
-
-  // Maybe left shift by the constants instead of multiply??? Might not be fine enough...
-  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-}
-
-/*
- * 
- */
-int16_t process_move_y(int16_t current_move)
-{
-//  static int16_t prev_move_y = current_move;
-//  int16_t current_diff = current_move - prev_move_y;
-//
-//  prev_move_y = current_move;
-//
-////  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-//  return (current_diff * CONSTANT_A) + ((current_diff * current_diff) * CONSTANT_B);
-
-  static int16_t prev_move_y = current_move;
-  int16_t current_diff = current_move - prev_move_y;
-  int16_t invert = 1;
-  
-  prev_move_y = current_move;
-
-  if (current_diff < 0) {
-    invert = -1;
-  } else {
-    invert = 1;
-  }
-
-  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-}
-
-/*
- * Process the state of the mouse buttons and transmit mouse clicks, if
- * appropriate.
- * 
- * This function supports left and right mouse clicks.
- */
 void process_click(void)
 {
 //    static bool preRightClick = false;
+  
   String base = "AT+BLEHIDMOUSEBUTTON=";
   
   if (LEFT_CLICK) {
+//        mouse.press(MOUSE_LEFT);
     base = base + "L";
   } else {
+//        mouse.release(MOUSE_LEFT);
     base = base + "0";
   }
   
@@ -399,42 +347,33 @@ void process_click(void)
 }
 
 /*
- * Initiate Gesture Mode. Then, track the user's movements and determine the
- * appropriate gesture.
  * 
- * This function only supports the gestures described in the gesture_state enum.
  */
+ 
 void process_gesture(void)
 {
-    // Declare initial gesture
     gesture_state curr_gesture_state = GESTURE_START;
     
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
-    int16_t move_z_initial = euler.z();
     
-    while (GESTURE_MODE) {
+    while (digitalRead(13) == LOW) {
+        Serial.println("PROCESSING GESTURE. IN LOOP (BUTTON HIGH)");
         delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
         int16_t move_x = euler.x();
         move_x = normalize(move_x);
-        int16_t move_z = euler.z();
-        
         
         switch (curr_gesture_state) {
         case GESTURE_START:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
                 curr_gesture_state = GESTURE_RIGHT;
+//            } else if (move_x < -MAXMOVE-MOVETHRESHOLD) { // past left threshold
             } else if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_LEFT;
-            } else if (move_z > (move_z_initial + MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_ROLL_RIGHT;
-            } else if (move_z < (move_z_initial - MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_ROLL_LEFT;
             }
-            // ^^^ Have heading change take priority over roll change!
             break;
         case GESTURE_LEFT:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
@@ -442,6 +381,7 @@ void process_gesture(void)
             }
             break;
         case GESTURE_RIGHT:
+//            if (move_x < -MAXMOVE-MOVETHRESHOLD) { // past left threshold
             if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
@@ -467,22 +407,13 @@ void process_gesture(void)
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
-    } else if (curr_gesture_state = GESTURE_ROLL_RIGHT) {
-      constant_a++;
-      constant_b++;
-    } else if (curr_gesture_state = GESTURE_ROLL_LEFT) {
-      if (constant_a > 1 && constant_b > 1) {
-        constant_a--;
-        constant_b--;
-      }
+        //Serial.println("double swipe worked!");
     }
 }
 
 // !!! Assume this only has to support SPACE for now
 /*
- * Transmit the character specified by key.
  * 
- * @param key the key to be transmitted
  */
 void tx_keystroke(char key)
 {
@@ -496,17 +427,4 @@ void tx_keystroke(char key)
   ble.println(base);
   ble.waitForOK();
 }
-
-///*
-// * Transmit a keystroke combo: a key along with a modifier
-// * 
-// * How to use:
-// * 
-// * @param key
-// * @param option
-// */
-//void tx_key_combo(char key, char option)
-//{
-//  
-//}
 
