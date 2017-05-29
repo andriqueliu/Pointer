@@ -60,31 +60,15 @@
 #define FACTORYRESET_ENABLE      1
 /*=========================================================================*/
 
-<<<<<<< HEAD
-// To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
-// Vice-versa to disable Serial printing
-#define DEBUG_SERIAL_BEGIN 1
-#define DEBUG
-=======
 // Define constraints for operating modes
 #define GESTURE_MODE (!gesture_button)
 #define LEFT_CLICK (!digitalRead(13))
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
 
 
-<<<<<<< HEAD
-// Define constraints for operating modes
-#define GESTURE_MODE (!digitalRead(13))
-#define LEFT_CLICK (!digitalRead(11))       
-
-// 
-#define BNO055_SAMPLERATE_DELAY_MS (100)
-=======
 // Create IMU object
 Adafruit_BNO055 bno = Adafruit_BNO055();
 
 #define BNO055_SAMPLERATE_DELAY_MS (10)
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (150)
 
@@ -121,15 +105,7 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
-<<<<<<< HEAD
-// Global Variables:
-
-double constant_a;
-double constant_b;
-
-=======
 int count;
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
 
 /**************************************************************************/
 /*!
@@ -143,21 +119,6 @@ void setup(void)
   pinMode(9,INPUT);
   pinMode(5,OUTPUT);
   digitalWrite(5,HIGH);
-<<<<<<< HEAD
-  
-  // Left click button
-  pinMode(11, INPUT);
-  // Right click button
-//  pinMode(something, INPUT);
-  // Gesture Mode button
-  pinMode(13, INPUT);
-
-  // Declare initial values of constants A and B
-  constant_a = 3;
-  constant_b = 7;
-
-  // Hang until connection with BNO055 has been established
-=======
   pinMode(13, INPUT);
   
   pinMode(12, INPUT);
@@ -175,7 +136,6 @@ void setup(void)
 //    pinMode(SOMELEFTCLICKPIN, INPUT);
 //    pinMode(SOMERIGHTCLICKPIN, INPUT);
   Serial.begin(9600); 
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
   if(!bno.begin())
   {
       /* There was a problem detecting the BNO055 ... check your connections */     
@@ -189,11 +149,9 @@ void setup(void)
   Serial.println(F("Adafruit Bluefruit LE"));
   Serial.println(F("-------------------------------------"));
 
-  /*
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
-  */
-  
+
   /* Initialise the module */
   Serial.print(F("Initialising the Bluefruit LE module: "));
 
@@ -258,32 +216,6 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-<<<<<<< HEAD
-  // Even a 10 ms delay makes the mouse unusable
-  //delay(BNO055_SAMPLERATE_DELAY_MS);
-  if (!GESTURE_MODE) {
-    process_click();
-//    process_sensitivity();
-    process_move();
-  } else {
-    process_gesture();
-  }
-  
-  process_reset();
-}
-
-/*
- * 
- */
-void process_reset(void)
-{
-  if (digitalRead(9) == LOW) {
-    // Toggle BNO055's reset input
-    digitalWrite(5, LOW);
-    digitalWrite(5, HIGH);
-
-    // Run the BNO055's initialization sequence
-=======
   
   // Reset BNO055 chip
   if (digitalRead(9) == LOW) {
@@ -293,7 +225,6 @@ void process_reset(void)
     */
     digitalWrite(5, LOW);
     digitalWrite(5, HIGH);
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
     bno.begin();  
   }
 
@@ -315,29 +246,11 @@ void process_reset(void)
  */
 void process_move(void)
 {    
-  double move_x;
-  int16_t move_y;
-
+  int16_t move_x, move_y;
+  
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   move_x = euler.x();
   move_y = euler.y();
-<<<<<<< HEAD
-  move_x = normalize(move_x);
-
-//  // 
-//  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
-//    move_x = 0;
-//  }
-//  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
-//    move_y = 0;
-//  }
-
-  // 
-  move_x = process_move_x(move_x);
-  move_y = process_move_y(move_y);
-
-
-=======
   move_x = normalize(move_x); 
   
   // Control x-axis using heading
@@ -373,22 +286,10 @@ void process_move(void)
         move_y+=MOVETHRESHOLD;
     }
   }
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
-
-  // Look at value before to string
-  // Confirmed: to string not ruining anything
-//  SERIAL_PRINT(move_x);
-//  SERIAL_PRINT(" ");
-//  SERIAL_PRINT(move_y);
-//  SERIAL_PRINT('\n');
-
-  // Might have to cast back...
-  int new_move_x = floor(move_x);
-  
-  String x = String(new_move_x);
+  String x = String(move_x);
   String separate = ",";
   String y = String(move_y);
   
@@ -401,7 +302,7 @@ void process_move(void)
 /*
  * 
  */
-int16_t normalize(double value)
+int16_t normalize(int16_t value)
 {
     if (value >= 0 && value <= 179) {
         // Do nothing
@@ -415,110 +316,6 @@ int16_t normalize(double value)
 /*
  * 
  */
-<<<<<<< HEAD
-double process_move_x(double current_move)
-{
-  static double prev_move_x = current_move;
-  double current_diff = current_move - prev_move_x;
-  double invert = 1;
-  Serial.print("current_move: ");
-  Serial.println(current_move);
-
-  Serial.print("prev_move_x: ");
-  Serial.println(prev_move_x);
-
-  Serial.print("current_diff: ");
-  Serial.println(current_diff);
-  
-
-
-  
-  prev_move_x = current_move;
-
-  // Replace constant mult. with shifting! Try that later... First, try ADDING as opposed to multiplying...
-//  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-  if (current_diff < 0) {
-    invert = -1;
-  } else {
-    invert = 1;
-  }
-
-  // Maybe left shift by the constants instead of multiply??? Might not be fine enough...
-//  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-
-//  if (current_diff == 4) {
-//    SERIAL_PRINT("THE DIFF IS 4\n");
-//    SERIAL_PRINT(current_move);
-//    SERIAL_PRINT(" ");
-//    SERIAL_PRINT(prev_move_x);
-//    SERIAL_PRINT('\n');
-//  }
-
-  double final;
-  
-  if (current_diff >= 0) {
-    final = (current_diff) + ((current_diff * current_diff) * constant_b);
-//    final = (current_diff) + constant_b;
-  } else {
-    final = (current_diff) - ((current_diff * current_diff) * constant_b);
-//    final = (current_diff) - constant_b;
-  }
-
-//  if (final == 52 || final == -52) {
-//    SERIAL_PRINT(current_move);
-//    SERIAL_PRINT(" ");
-//    SERIAL_PRINT(prev_move_x);
-//    SERIAL_PRINT('\n');
-//  }
-
-  return final;
-}
-
-/*
- * 
- */
-int16_t process_move_y(int16_t current_move)
-{
-//  static int16_t prev_move_y = current_move;
-//  int16_t current_diff = current_move - prev_move_y;
-//
-//  prev_move_y = current_move;
-//
-////  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-//  return (current_diff * CONSTANT_A) + ((current_diff * current_diff) * CONSTANT_B);
-
-  static int16_t prev_move_y = current_move;
-  int16_t current_diff = current_move - prev_move_y;
-  int16_t invert = 1;
-  
-  prev_move_y = current_move;
-
-  if (current_diff < 0) {
-    invert = -1;
-  } else {
-    invert = 1;
-  }
-
-//  if (current_diff == 4) {
-//    SERIAL_PRINT("THE DIFF IS 4!!!!!!!\n");
-//  }
-  
-  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-//  if (current_diff < 0) {
-//    return (current_diff * constant_a) - ((current_diff * current_diff) * constant_b);
-//  } else {
-//    return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b);
-//  }
-}
-
-/*
- * Process the state of the mouse buttons and transmit mouse clicks, if
- * appropriate.
- * 
- * This function supports left and right mouse clicks.
- */
-=======
->>>>>>> 56b58ce729eba7624b55e4adb12f1d96e2aa7995
 void process_click(void)
 {
 //    static bool preRightClick = false;
