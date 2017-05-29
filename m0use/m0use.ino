@@ -63,8 +63,8 @@
 
 // To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
 // Vice-versa to disable Serial printing
-#define DEBUG_SERIAL_BEGIN 0
-//#define DEBUG
+#define DEBUG_SERIAL_BEGIN 1
+#define DEBUG
 
 // Macros to enable Serial printing based on debug macros:
 #ifdef DEBUG
@@ -79,11 +79,11 @@
 #endif
 
 // Define constraints for operating modes
-#define GESTURE_MODE (!digitalRead(10))
-#define LEFT_CLICK (!digitalRead(11))
+#define GESTURE_MODE (!digitalRead(13))
+#define LEFT_CLICK (!digitalRead(11))       
 
 // 
-#define BNO055_SAMPLERATE_DELAY_MS (10)
+#define BNO055_SAMPLERATE_DELAY_MS (100)
 #define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
 
@@ -116,8 +116,8 @@ void error(const __FlashStringHelper*err) {
 
 // Global Variables:
 
-int16_t constant_a;
-int16_t constant_b;
+double constant_a;
+double constant_b;
 
 
 /**************************************************************************/
@@ -129,20 +129,20 @@ int16_t constant_b;
 void setup(void)
 {
   // BNO055 reset GPIOs
-  pinMode(13,INPUT);
-  pinMode(12,OUTPUT);
-  digitalWrite(12,HIGH);
+  pinMode(9,INPUT);
+  pinMode(5,OUTPUT);
+  digitalWrite(5,HIGH);
   
   // Left click button
   pinMode(11, INPUT);
   // Right click button
 //  pinMode(something, INPUT);
   // Gesture Mode button
-  pinMode(10, INPUT);
+  pinMode(13, INPUT);
 
   // Declare initial values of constants A and B
-  constant_a = 2;
-  constant_b = 2;
+  constant_a = 3;
+  constant_b = 7;
 
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
@@ -162,9 +162,11 @@ void setup(void)
   SERIAL_PRINT_F("Adafruit Bluefruit LE\n");
   SERIAL_PRINT_F("-------------------------------------\n");
 
+  /*
   pinMode(6, INPUT);
   pinMode(5, OUTPUT);
-
+  */
+  
   /* Initialise the module */
   SERIAL_PRINT_F("Initialising the Bluefruit LE module: ");
 
@@ -230,8 +232,7 @@ while (1) {
 void loop(void)
 {
   // Even a 10 ms delay makes the mouse unusable
-//  delay(BNO055_SAMPLERATE_DELAY_MS);
-
+  //delay(BNO055_SAMPLERATE_DELAY_MS);
   if (!GESTURE_MODE) {
     process_click();
 //    process_sensitivity();
@@ -248,10 +249,10 @@ void loop(void)
  */
 void process_reset(void)
 {
-  if (digitalRead(13) == LOW) {
+  if (digitalRead(9) == LOW) {
     // Toggle BNO055's reset input
-    digitalWrite(12, LOW);
-    digitalWrite(12, HIGH);
+    digitalWrite(5, LOW);
+    digitalWrite(5, HIGH);
 
     // Run the BNO055's initialization sequence
     bno.begin();  
@@ -263,28 +264,42 @@ void process_reset(void)
  */
 void process_move(void)
 {    
-  int16_t move_x, move_y;
-  
+  double move_x;
+  int16_t move_y;
+
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   move_x = euler.x();
   move_y = euler.y();
-  move_x = normalize(move_x); 
+  move_x = normalize(move_x);
 
-  // 
-  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
-    move_x = 0;
-  }
-  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
-    move_y = 0;
-  }
+//  // 
+//  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
+//    move_x = 0;
+//  }
+//  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
+//    move_y = 0;
+//  }
 
   // 
   move_x = process_move_x(move_x);
-  move_y = -process_move_y(move_y);
+  move_y = process_move_y(move_y);
+
+
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
-  String x = String(move_x);
+
+  // Look at value before to string
+  // Confirmed: to string not ruining anything
+//  SERIAL_PRINT(move_x);
+//  SERIAL_PRINT(" ");
+//  SERIAL_PRINT(move_y);
+//  SERIAL_PRINT('\n');
+
+  // Might have to cast back...
+  int new_move_x = floor(move_x);
+  
+  String x = String(new_move_x);
   String separate = ",";
   String y = String(move_y);
   
@@ -303,7 +318,7 @@ void process_move(void)
  * @param value value to be normalized
  * @return normalized value
  */
-int16_t normalize(int16_t value)
+int16_t normalize(double value)
 {
     if (value >= 0 && value <= 179) {
         // Do nothing
@@ -317,11 +332,22 @@ int16_t normalize(int16_t value)
 /*
  * 
  */
-int16_t process_move_x(int16_t current_move)
+double process_move_x(double current_move)
 {
-  static int16_t prev_move_x = current_move;
-  int16_t current_diff = current_move - prev_move_x;
-  int16_t invert = 1;
+  static double prev_move_x = current_move;
+  double current_diff = current_move - prev_move_x;
+  double invert = 1;
+  Serial.print("current_move: ");
+  Serial.println(current_move);
+
+  Serial.print("prev_move_x: ");
+  Serial.println(prev_move_x);
+
+  Serial.print("current_diff: ");
+  Serial.println(current_diff);
+  
+
+
   
   prev_move_x = current_move;
 
@@ -334,7 +360,34 @@ int16_t process_move_x(int16_t current_move)
   }
 
   // Maybe left shift by the constants instead of multiply??? Might not be fine enough...
-  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
+//  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
+
+//  if (current_diff == 4) {
+//    SERIAL_PRINT("THE DIFF IS 4\n");
+//    SERIAL_PRINT(current_move);
+//    SERIAL_PRINT(" ");
+//    SERIAL_PRINT(prev_move_x);
+//    SERIAL_PRINT('\n');
+//  }
+
+  double final;
+  
+  if (current_diff >= 0) {
+    final = (current_diff) + ((current_diff * current_diff) * constant_b);
+//    final = (current_diff) + constant_b;
+  } else {
+    final = (current_diff) - ((current_diff * current_diff) * constant_b);
+//    final = (current_diff) - constant_b;
+  }
+
+//  if (final == 52 || final == -52) {
+//    SERIAL_PRINT(current_move);
+//    SERIAL_PRINT(" ");
+//    SERIAL_PRINT(prev_move_x);
+//    SERIAL_PRINT('\n');
+//  }
+
+  return final;
 }
 
 /*
@@ -362,7 +415,16 @@ int16_t process_move_y(int16_t current_move)
     invert = 1;
   }
 
+//  if (current_diff == 4) {
+//    SERIAL_PRINT("THE DIFF IS 4!!!!!!!\n");
+//  }
+  
   return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
+//  if (current_diff < 0) {
+//    return (current_diff * constant_a) - ((current_diff * current_diff) * constant_b);
+//  } else {
+//    return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b);
+//  }
 }
 
 /*
