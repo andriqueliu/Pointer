@@ -1,4 +1,7 @@
-
+/*
+ * 
+ */
+ 
 /*********************************************************************
   This is an example for our nRF51822 based Bluefruit LE modules
 
@@ -63,8 +66,8 @@
 
 // To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
 // Vice-versa to disable Serial printing
-#define DEBUG_SERIAL_BEGIN 1
-#define DEBUG
+#define DEBUG_SERIAL_BEGIN 0
+//#define DEBUG
 
 // Macros to enable Serial printing based on debug macros:
 #ifdef DEBUG
@@ -80,7 +83,8 @@
 
 // Define constraints for operating modes
 #define GESTURE_MODE (!digitalRead(13))
-#define LEFT_CLICK (!digitalRead(11))       
+#define LEFT_CLICK (!digitalRead(11))
+#define RESET (!digitalRead(9))
 
 // 
 #define BNO055_SAMPLERATE_DELAY_MS (100)
@@ -116,8 +120,8 @@ void error(const __FlashStringHelper*err) {
 
 // Global Variables:
 
-double constant_a;
-double constant_b;
+int16_t constant_a;
+int16_t constant_b;
 
 
 /**************************************************************************/
@@ -235,7 +239,6 @@ void loop(void)
   //delay(BNO055_SAMPLERATE_DELAY_MS);
   if (!GESTURE_MODE) {
     process_click();
-//    process_sensitivity();
     process_move();
   } else {
     process_gesture();
@@ -244,12 +247,14 @@ void loop(void)
   process_reset();
 }
 
+// !!! We can replace this later with a right click...
 /*
- * 
+ * Checks whether the reset button is pressed; if pressed, this function resets
+ * the BNO055.
  */
 void process_reset(void)
 {
-  if (digitalRead(9) == LOW) {
+  if (RESET) {
     // Toggle BNO055's reset input
     digitalWrite(5, LOW);
     digitalWrite(5, HIGH);
@@ -262,44 +267,28 @@ void process_reset(void)
 /*
  * Determine the direction and magnitude of mouse movement.
  */
-void process_move
-  double move_x;
+void process_move(void)
+{
+  int16_t move_x;
   int16_t move_y;
 
-  imu::Vector(void)
-{    <3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   move_x = euler.x();
   move_y = euler.y();
   move_x = normalize(move_x);
 
-//  // 
-//  if (-MOVETHRESHOLD <= move_x && move_x <= MOVETHRESHOLD) {
-//    move_x = 0;
-//  }
-//  if (-MOVETHRESHOLD <= move_y && move_y <= MOVETHRESHOLD) {
-//    move_y = 0;
-//  }
-
-  // 
+  // Determine 
   move_x = process_move_x(move_x);
+  // MAY NEED TO NEGATE HERE
   move_y = process_move_y(move_y);
-
-
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
 
-  // Look at value before to string
-  // Confirmed: to string not ruining anything
-//  SERIAL_PRINT(move_x);
-//  SERIAL_PRINT(" ");
-//  SERIAL_PRINT(move_y);
-//  SERIAL_PRINT('\n');
-
   // Might have to cast back...
-  int new_move_x = floor(move_x);
+//  int new_move_x = floor(move_x);
   
-  String x = String(new_move_x);
+  String x = String(move_x);
   String separate = ",";
   String y = String(move_y);
   
@@ -318,7 +307,7 @@ void process_move
  * @param value value to be normalized
  * @return normalized value
  */
-int16_t normalize(double value)
+int16_t normalize(int16_t value)
 {
     if (value >= 0 && value <= 179) {
         // Do nothing
@@ -332,60 +321,28 @@ int16_t normalize(double value)
 /*
  * 
  */
-double process_move_x(double current_move)
+int16_t process_move_x(int16_t current_move)
 {
-  static double prev_move_x = current_move;
-  double current_diff = current_move - prev_move_x;
-  double invert = 1;
-  Serial.print("current_move: ");
-  Serial.println(current_move);
-
-  Serial.print("prev_move_x: ");
-  Serial.println(prev_move_x);
-
-  Serial.print("current_diff: ");
-  Serial.println(current_diff);
-  
-
-
+  static int16_t prev_move_x = current_move;
+  int16_t current_diff = current_move - prev_move_x;
+//  Serial.print("current_move: ");
+//  Serial.println(current_move);
+//
+//  Serial.print("prev_move_x: ");
+//  Serial.println(prev_move_x);
+//
+//  Serial.print("current_diff: ");
+//  Serial.println(current_diff);
   
   prev_move_x = current_move;
 
-  // Replace constant mult. with shifting! Try that later... First, try ADDING as opposed to multiplying...
-//  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-  if (current_diff < 0) {
-    invert = -1;
-  } else {
-    invert = 1;
-  }
-
-  // Maybe left shift by the constants instead of multiply??? Might not be fine enough...
-//  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-
-//  if (current_diff == 4) {
-//    SERIAL_PRINT("THE DIFF IS 4\n");
-//    SERIAL_PRINT(current_move);
-//    SERIAL_PRINT(" ");
-//    SERIAL_PRINT(prev_move_x);
-//    SERIAL_PRINT('\n');
-//  }
-
-  double final;
+  int16_t final;
   
   if (current_diff >= 0) {
     final = (current_diff) + ((current_diff * current_diff) * constant_b);
-//    final = (current_diff) + constant_b;
   } else {
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
-//    final = (current_diff) - constant_b;
   }
-
-//  if (final == 52 || final == -52) {
-//    SERIAL_PRINT(current_move);
-//    SERIAL_PRINT(" ");
-//    SERIAL_PRINT(prev_move_x);
-//    SERIAL_PRINT('\n');
-//  }
 
   return final;
 }
@@ -395,36 +352,20 @@ double process_move_x(double current_move)
  */
 int16_t process_move_y(int16_t current_move)
 {
-//  static int16_t prev_move_y = current_move;
-//  int16_t current_diff = current_move - prev_move_y;
-//
-//  prev_move_y = current_move;
-//
-////  return (current_diff * CONSTANT_A) * ((current_diff * current_diff) * CONSTANT_B);
-//  return (current_diff * CONSTANT_A) + ((current_diff * current_diff) * CONSTANT_B);
-
   static int16_t prev_move_y = current_move;
   int16_t current_diff = current_move - prev_move_y;
-  int16_t invert = 1;
   
   prev_move_y = current_move;
-
-  if (current_diff < 0) {
-    invert = -1;
+  
+  int16_t final;
+  
+  if (current_diff >= 0) {
+    final = (current_diff) + ((current_diff * current_diff) * constant_b);
   } else {
-    invert = 1;
+    final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
-//  if (current_diff == 4) {
-//    SERIAL_PRINT("THE DIFF IS 4!!!!!!!\n");
-//  }
-  
-  return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b * invert);
-//  if (current_diff < 0) {
-//    return (current_diff * constant_a) - ((current_diff * current_diff) * constant_b);
-//  } else {
-//    return (current_diff * constant_a) + ((current_diff * current_diff) * constant_b);
-//  }
+  return final;
 }
 
 /*
@@ -484,7 +425,7 @@ void process_gesture(void)
         move_x = normalize(move_x);
         int16_t move_z = euler.z();
         
-        
+        //         
         switch (curr_gesture_state) {
         case GESTURE_START:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
