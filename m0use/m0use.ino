@@ -145,7 +145,7 @@ void setup(void)
   pinMode(13, INPUT);
 
   // Declare initial values of constants A and B
-  constant_a = 2;
+  constant_a = 1;
   constant_b = 7;
 
   // Hang until connection with BNO055 has been established
@@ -471,15 +471,16 @@ void process_gesture(void)
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
-    } else if (curr_gesture_state = GESTURE_ROLL_RIGHT) {
-      constant_a++;
-      constant_b++;
-    } else if (curr_gesture_state = GESTURE_ROLL_LEFT) {
-      if (constant_a > 1 && constant_b > 1) {
-        constant_a--;
-        constant_b--;
-      }
     }
+//    } else if (curr_gesture_state = GESTURE_ROLL_RIGHT) {
+//      constant_a++;
+//      constant_b++;
+//    } else if (curr_gesture_state = GESTURE_ROLL_LEFT) {
+//      if (constant_a > 1 && constant_b > 1) {
+//        constant_a--;
+//        constant_b--;
+//      }
+//    }
 
   // 
   volatile int16_t temp;
