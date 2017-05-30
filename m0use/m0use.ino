@@ -415,6 +415,7 @@ void process_gesture(void)
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
+    int16_t move_y_initial = euler.y();
     int16_t move_z_initial = euler.z();
     
     while (GESTURE_MODE) {
@@ -479,7 +480,19 @@ void process_gesture(void)
         constant_b--;
       }
     }
+
+  // 
+  volatile int16_t temp;
+  
+  // Hang until hand returns to initial x position 
+  do {
+    // Update the euler values
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    temp = euler.x();
+  } while (temp != move_x_initial);
 }
+
+
 
 // !!! Assume this only has to support SPACE for now
 /*
