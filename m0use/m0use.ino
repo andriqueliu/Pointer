@@ -146,14 +146,14 @@ void setup(void)
 
   // Declare initial values of constants A and B
   constant_a = 2;
-  constant_b = 6;
+  constant_b = 7;
 
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
   {
-      /* There was a problem detecting the BNO055 ... check your connections */
-      SERIAL_PRINT("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-      while(1);
+    /* There was a problem detecting the BNO055 ... check your connections */
+    SERIAL_PRINT("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1);
   }
 
   delay(500);
