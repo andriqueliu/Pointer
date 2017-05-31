@@ -88,7 +88,7 @@
 
 // 
 #define BNO055_SAMPLERATE_DELAY_MS (100)
-#define MOVETHRESHOLD (2)
+#define MOVETHRESHOLD (3)
 #define MAXMOVE (100)
 
 // Constants used to influence mouse movement
@@ -100,6 +100,8 @@ typedef enum {
     GESTURE_START,
     GESTURE_RIGHT,
     GESTURE_LEFT,
+    GESTURE_UP,
+    GESTURE_DOWN,
     GESTURE_DOUBLE_SWIPE,
     GESTURE_ROLL_RIGHT,
     GESTURE_ROLL_LEFT
@@ -237,28 +239,28 @@ void loop(void)
 {
   // Even a 10 ms delay makes the mouse unusable
   //delay(BNO055_SAMPLERATE_DELAY_MS);
-//  if (!GESTURE_MODE) {
-//    process_click();
-//    process_move();
-//  } else {
-//    process_gesture();
-//  }
-//  
-//  process_reset();
+  if (!GESTURE_MODE) {
+    process_click();
+    process_move();
+  } else {
+    process_gesture();
+  }
+  
+  process_reset();
 
-  delay(100);
-  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  int16_t move_x = euler.x();
-  move_x = normalize(move_x);
-  int16_t move_y = euler.y();
-  int16_t move_z = euler.z();
-
-  Serial.print(move_x);
-  Serial.print(' ');
-  Serial.print(move_y);
-  Serial.print(' ');
-  Serial.print(move_z);
-  Serial.println();
+//  delay(100);
+//  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+//  int16_t move_x = euler.x();
+//  move_x = normalize(move_x);
+//  int16_t move_y = euler.y();
+//  int16_t move_z = euler.z();
+//
+//  Serial.print(move_x);
+//  Serial.print(' ');
+//  Serial.print(move_y);
+//  Serial.print(' ');
+//  Serial.print(move_z);
+//  Serial.println();
 }
 
 // !!! We can replace this later with a right click...
@@ -295,6 +297,12 @@ void process_move(void)
   move_x = process_move_x(move_x);
   // MAY NEED TO NEGATE HERE
   move_y = process_move_y(move_y);
+
+  // Try method to move 1 pixel at a time later... Use a for loop or something, insert
+  // some kind of delay for "smoother" movement
+//  for () {
+//    
+//  }
   
   // Transmit AT command for mouse movement
   String base = "AT+BLEHIDMOUSEMOVE=";
@@ -358,6 +366,13 @@ int16_t process_move_x(int16_t current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
+  // !!! Lower the minimum movement
+  if (final == 2) {
+    return 1;
+  } else if (final == -2) {
+    return -1;
+  }
+
   return final;
 }
 
@@ -379,6 +394,13 @@ int16_t process_move_y(int16_t current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
+  // !!! Lower the minimum movement
+  if (final == 2) {
+    return 1;
+  } else if (final == -2) {
+    return -1;
+  }
+  
   return final;
 }
 
@@ -433,7 +455,7 @@ void process_gesture(void)
     int16_t move_z_initial = euler.z();
 
     while (GESTURE_MODE) {
-        delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
+//        delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
         int16_t move_x = euler.x();
@@ -444,47 +466,68 @@ void process_gesture(void)
         //         
         switch (curr_gesture_state) {
         case GESTURE_START:
-            if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
-                curr_gesture_state = GESTURE_RIGHT;
-            } else if (move_x < (move_x_initial - MOVETHRESHOLD)) {
-                curr_gesture_state = GESTURE_LEFT;
-            } else if (move_z > (move_z_initial + MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_ROLL_RIGHT;
-            } else if (move_z < (move_z_initial - MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_ROLL_LEFT;
-            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) { // Account for pitch
-              curr_gesture_state = GESTURE_RIGHT;
-            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_LEFT;
-            }
+//            if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
+//                curr_gesture_state = GESTURE_RIGHT;
+//            } else if (move_x < (move_x_initial - MOVETHRESHOLD)) {
+//                curr_gesture_state = GESTURE_LEFT;
+//            } else if (move_z > (move_z_initial + MOVETHRESHOLD)) {
+//              curr_gesture_state = GESTURE_ROLL_RIGHT;
+//            } else if (move_z < (move_z_initial - MOVETHRESHOLD)) {
+//              curr_gesture_state = GESTURE_ROLL_LEFT;
+//            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) { // Account for pitch
+//              curr_gesture_state = GESTURE_RIGHT;
+//            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+//              curr_gesture_state = GESTURE_LEFT;
+//            }
             // ^^^ Have heading change take priority over roll change!
+            
+            if (move_x > (move_x_initial + MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_RIGHT;
+            } else if (move_x < (move_x_initial - MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_LEFT;
+            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_UP; // !!! Might be inverted
+            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_DOWN;
+            }
+            
+            
             break;
         case GESTURE_LEFT:
-            if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
-                curr_gesture_state = GESTURE_DOUBLE_SWIPE;
-            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
+//            if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
+//                curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
+//              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            }
+            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
               curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
             break;
         case GESTURE_RIGHT:
-            if (move_x < (move_x_initial - 3)) {
-                curr_gesture_state = GESTURE_DOUBLE_SWIPE;
-            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+//            if (move_x < (move_x_initial - 3)) {
+//                curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+//              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            }
+            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
               curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
+            break;
+//        case GESTURE_UP:
+              
         case GESTURE_DOUBLE_SWIPE:
             break;
         default:
             break;
         }
     }
-    
+
+    // Wrap this up into a function
     // Once the user lets go, begin parsing through the sampled Euler data
     // and then determine what gesture was done
     // Jk, see what state it is and act on it...
     if (curr_gesture_state == GESTURE_START) {
-//        left = 0;
-//        right = 0;
+        // Send over a right click
     } else if (curr_gesture_state == GESTURE_LEFT) {
 //        left = 1;
 //        right = 0;
