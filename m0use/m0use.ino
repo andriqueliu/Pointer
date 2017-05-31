@@ -88,7 +88,7 @@
 
 // 
 #define BNO055_SAMPLERATE_DELAY_MS (100)
-#define MOVETHRESHOLD (3)
+#define MOVETHRESHOLD (2)
 #define MAXMOVE (100)
 
 // Constants used to influence mouse movement
@@ -237,14 +237,28 @@ void loop(void)
 {
   // Even a 10 ms delay makes the mouse unusable
   //delay(BNO055_SAMPLERATE_DELAY_MS);
-  if (!GESTURE_MODE) {
-    process_click();
-    process_move();
-  } else {
-    process_gesture();
-  }
-  
-  process_reset();
+//  if (!GESTURE_MODE) {
+//    process_click();
+//    process_move();
+//  } else {
+//    process_gesture();
+//  }
+//  
+//  process_reset();
+
+  delay(100);
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  int16_t move_x = euler.x();
+  move_x = normalize(move_x);
+  int16_t move_y = euler.y();
+  int16_t move_z = euler.z();
+
+  Serial.print(move_x);
+  Serial.print(' ');
+  Serial.print(move_y);
+  Serial.print(' ');
+  Serial.print(move_z);
+  Serial.println();
 }
 
 // !!! We can replace this later with a right click...
@@ -417,13 +431,14 @@ void process_gesture(void)
     move_x_initial = normalize(move_x_initial);
     int16_t move_y_initial = euler.y();
     int16_t move_z_initial = euler.z();
-    
+
     while (GESTURE_MODE) {
         delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
         int16_t move_x = euler.x();
         move_x = normalize(move_x);
+        int16_t move_y = euler.y();
         int16_t move_z = euler.z();
         
         //         
@@ -431,23 +446,31 @@ void process_gesture(void)
         case GESTURE_START:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
                 curr_gesture_state = GESTURE_RIGHT;
-            } else if (move_x < (move_x_initial - 3)) {
+            } else if (move_x < (move_x_initial - MOVETHRESHOLD)) {
                 curr_gesture_state = GESTURE_LEFT;
             } else if (move_z > (move_z_initial + MOVETHRESHOLD)) {
               curr_gesture_state = GESTURE_ROLL_RIGHT;
             } else if (move_z < (move_z_initial - MOVETHRESHOLD)) {
               curr_gesture_state = GESTURE_ROLL_LEFT;
+            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) { // Account for pitch
+              curr_gesture_state = GESTURE_RIGHT;
+            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_LEFT;
             }
             // ^^^ Have heading change take priority over roll change!
             break;
         case GESTURE_LEFT:
             if (move_x > (move_x_initial + MOVETHRESHOLD)) { // past right threshold
                 curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
             break;
         case GESTURE_RIGHT:
             if (move_x < (move_x_initial - 3)) {
                 curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
+              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
         case GESTURE_DOUBLE_SWIPE:
             break;
@@ -482,15 +505,15 @@ void process_gesture(void)
 //      }
 //    }
 
-  // 
-  volatile int16_t temp;
-  
-  // Hang until hand returns to initial x position 
-  do {
-    // Update the euler values
-    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    temp = euler.x();
-  } while (temp != move_x_initial);
+//  // 
+//  volatile int16_t temp;
+//  
+//  // Hang until hand returns to initial x position 
+//  do {
+//    // Update the euler values
+//    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+//    temp = euler.x();
+//  } while (temp != move_x_initial);
 }
 
 
