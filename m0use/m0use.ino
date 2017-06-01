@@ -368,20 +368,26 @@ int16_t process_move_x(int16_t current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
-  // !!! Lower the minimum movement
-  if (final > 4 && final < 7) {
-    return 1;
-  } else if (final < -4 && final > -7) {
-    return -1;
-  } else if (final <= 4 && final >= -4) {
-    return 0;
-  }
+//  // !!! Lower the minimum movement
+//  if (final > 4 && final < 7) {
+//    return 1;
+//  } else if (final < -4 && final > -7) {
+//    return -1;
+//  } else if (final <= 4 && final >= -4) {
+//    return 0;
+//  }
+//
+//  // put a limit on final movement value
+//  if (final > 100) {
+//    final = 100;
+//  } else if (final < -100) {
+//    final = -100;            
+//  }
 
-  // put a limit on final movement value
-  if (final > 100) {
-    final = 100;
-  } else if (final < -100) {
-    final = -100;            
+  if (final == 2) {
+    return 1;
+  } else if (final == -2) {
+    return -1;
   }
   
 
@@ -406,22 +412,27 @@ int16_t process_move_y(int16_t current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
-  // !!! Lower the minimum movement
-  if (final > 4 && final < 7) {
+//  // !!! Lower the minimum movement
+//  if (final > 4 && final < 7) {
+//    return 1;
+//  } else if (final < -4 && final > -7) {
+//    return -1;
+//  } else if (final <= 4 && final >= -4) {
+//    return 0;
+//  }
+//  
+//  // put a limit on final movement value
+//  if (final > 100) {
+//    final = 100;
+//  } else if (final < -100) {
+//    final = -100;            
+//  }
+
+  if (final == 2) {
     return 1;
-  } else if (final < -4 && final > -7) {
+  } else if (final == -2) {
     return -1;
-  } else if (final <= 4 && final >= -4) {
-    return 0;
   }
-  
-  // put a limit on final movement value
-  if (final > 100) {
-    final = 100;
-  } else if (final < -100) {
-    final = -100;            
-  }
-  
   
   return final;
 }
