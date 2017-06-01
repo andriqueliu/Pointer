@@ -66,8 +66,8 @@
 
 // To enable Serial printing, set DEBUG_SERIAL_BEGIN 1, and uncomment DEBUG
 // Vice-versa to disable Serial printing
-#define DEBUG_SERIAL_BEGIN 0
-//#define DEBUG
+#define DEBUG_SERIAL_BEGIN 1
+#define DEBUG
 
 // Macros to enable Serial printing based on debug macros:
 #ifdef DEBUG
@@ -89,6 +89,7 @@
 // 
 #define BNO055_SAMPLERATE_DELAY_MS (100)
 #define MOVETHRESHOLD (3)
+#define MOVETHRESHOLD_Y (8)
 #define MAXMOVE (100)
 
 // Constants used to influence mouse movement
@@ -105,6 +106,7 @@ typedef enum {
     GESTURE_DOUBLE_SWIPE,
     GESTURE_ROLL_RIGHT,
     GESTURE_ROLL_LEFT
+
 } gesture_state;
 
 // Create IMU object
@@ -454,6 +456,22 @@ void process_gesture(void)
     int16_t move_y_initial = euler.y();
     int16_t move_z_initial = euler.z();
 
+    int16_t greatest_x = move_x_initial;
+    int16_t least_x = move_x_initial;
+    int16_t greatest_y = move_y_initial;
+    int16_t least_y = move_y_initial;
+  
+  
+  
+  
+  Serial.print(move_x_initial);
+  Serial.print(' ');
+  Serial.print(move_y_initial);
+  Serial.print(' ');
+  Serial.print(move_z_initial);
+  Serial.println();
+
+
     while (GESTURE_MODE) {
 //        delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
@@ -462,7 +480,13 @@ void process_gesture(void)
         move_x = normalize(move_x);
         int16_t move_y = euler.y();
         int16_t move_z = euler.z();
-        
+
+        // Update things
+        if (move_x > greatest_x) greatest_x = move_x;
+        if (move_x < least_x) least_x = move_x;
+        if (move_y < greatest_y) greatest_y = move_y;
+        if (move_y > least_y) least_y = move_y;
+                
         //         
         switch (curr_gesture_state) {
         case GESTURE_START:
@@ -481,15 +505,16 @@ void process_gesture(void)
 //            }
             // ^^^ Have heading change take priority over roll change!
             
-            if (move_x > (move_x_initial + MOVETHRESHOLD)) {
+            if (move_x > (move_x_initial + MOVETHRESHOLD)) { // move_x > (greatest_x + MOVETHRESHOLD)) -> greatest_x = move_x
               curr_gesture_state = GESTURE_RIGHT;
             } else if (move_x < (move_x_initial - MOVETHRESHOLD)) {
               curr_gesture_state = GESTURE_LEFT;
-            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_UP; // !!! Might be inverted
-            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
-              curr_gesture_state = GESTURE_DOWN;
-            }
+            } else if (move_y > (move_y_initial + MOVETHRESHOLD_Y)) {
+              curr_gesture_state = GESTURE_DOWN; // 
+            } else if (move_y < (move_y_initial - MOVETHRESHOLD_Y)) {
+              curr_gesture_state = GESTURE_UP;
+            } 
+            
             
             
             break;
@@ -499,7 +524,11 @@ void process_gesture(void)
 //            } else if (move_y > (move_y_initial + MOVETHRESHOLD)) {
 //              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
 //            }
-            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
+
+//            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
+//              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            }
+            if (move_x > (least_x + MOVETHRESHOLD)) {
               curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
             break;
@@ -509,14 +538,26 @@ void process_gesture(void)
 //            } else if (move_y < (move_y_initial - MOVETHRESHOLD)) {
 //              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
 //            }
-            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
+
+//            if (move_x == move_x_initial) { // Go back to starting point... cut down on total movement
+//              curr_gesture_state = GESTURE_DOUBLE_SWIPE;
+//            }
+            if (move_x < (greatest_x - MOVETHRESHOLD)) {
               curr_gesture_state = GESTURE_DOUBLE_SWIPE;
             }
             break;
-//        case GESTURE_UP:
-              
+        case GESTURE_UP:
+//            if (move_y < (greatest_y - MOVETHRESHOLD)) {
+//              curr_gesture_
+//            }
+            break;
+        case GESTURE_DOWN:
+            
+            break;
         case GESTURE_DOUBLE_SWIPE:
             break;
+//        case GESTURE_FLAP:
+//            break;
         default:
             break;
         }
@@ -528,16 +569,31 @@ void process_gesture(void)
     // Jk, see what state it is and act on it...
     if (curr_gesture_state == GESTURE_START) {
         // Send over a right click
+        ble.println("AT+BLEHIDMOUSEBUTTON=R");
+        ble.println("AT+BLEHIDMOUSEBUTTON=0");
     } else if (curr_gesture_state == GESTURE_LEFT) {
-//        left = 1;
+//        Serial.println("GESTURE LEFT REGISTERED");
+//          left = 1;
 //        right = 0;
+          Serial.println("GESTURE LEFT REGISTERED");
     } else if (curr_gesture_state == GESTURE_RIGHT) {
 //        left = 0;
 //        right = 1;
+          Serial.println("GESTURE RIGHT REGISTERED");
     } else if (curr_gesture_state == GESTURE_DOUBLE_SWIPE) {
         // Send over the keystroke
         tx_keystroke(' ');
+    } else if (curr_gesture_state == GESTURE_UP) {
+        ble.println("AT+BLEKEYBOARDCODE=08-00-2B-00");
+        ble.println("AT+BLEKEYBOARDCODE=00-00");
+        
+  
+        Serial.println("GESTURE UP REGISTERED OYEAAAAAABABY");      
+    } else if (curr_gesture_state == GESTURE_DOWN) {
+        Serial.println("GESTURE DOWN REGISTERED OYEAAAAAABABY");
     }
+
+    
 //    } else if (curr_gesture_state = GESTURE_ROLL_RIGHT) {
 //      constant_a++;
 //      constant_b++;
