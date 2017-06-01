@@ -124,8 +124,8 @@ void error(const __FlashStringHelper*err) {
 
 // Global Variables:
 
-int16_t constant_a;
-int16_t constant_b;
+int constant_a;
+int constant_b;
 
 // 0: Unpaused
 // 1: Paused
@@ -257,10 +257,10 @@ void loop(void)
 
 //  delay(100);
 //  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-//  int16_t move_x = euler.x();
+//  int move_x = euler.x();
 //  move_x = normalize(move_x);
-//  int16_t move_y = euler.y();
-//  int16_t move_z = euler.z();
+//  int move_y = euler.y();
+//  int move_z = euler.z();
 //
 //  Serial.print(move_x);
 //  Serial.print(' ');
@@ -287,8 +287,8 @@ void process_reset(void)
  */
 void process_move(void)
 {
-  int16_t move_x;
-  int16_t move_y;
+  int move_x;
+  int move_y;
 
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   move_x = euler.x();
@@ -331,7 +331,7 @@ void process_move(void)
  * @param value value to be normalized
  * @return normalized value
  */
-int16_t normalize(int16_t value)
+int normalize(int value)
 {
     if (value >= 0 && value <= 179) {
         // Do nothing
@@ -345,10 +345,10 @@ int16_t normalize(int16_t value)
 /*
  * 
  */
-int16_t process_move_x(int16_t current_move)
+int process_move_x(int current_move)
 {
-  static int16_t prev_move_x = current_move;
-  int16_t current_diff = current_move - prev_move_x;
+  static int prev_move_x = current_move;
+  int current_diff = current_move - prev_move_x;
 //  Serial.print("current_move: ");
 //  Serial.println(current_move);
 //
@@ -360,7 +360,7 @@ int16_t process_move_x(int16_t current_move)
   
   prev_move_x = current_move;
 
-  int16_t final;
+  int final;
   
   if (current_diff >= 0) {
     final = (current_diff) + ((current_diff * current_diff) * constant_b);
@@ -397,14 +397,14 @@ int16_t process_move_x(int16_t current_move)
 /*
  * 
  */
-int16_t process_move_y(int16_t current_move)
+int process_move_y(int current_move)
 {
-  static int16_t prev_move_y = current_move;
-  int16_t current_diff = current_move - prev_move_y;
+  static int prev_move_y = current_move;
+  int current_diff = current_move - prev_move_y;
   
   prev_move_y = current_move;
   
-  int16_t final;
+  int final;
   
   if (current_diff >= 0) {
     final = (current_diff) + ((current_diff * current_diff) * constant_b);
@@ -482,15 +482,15 @@ void process_gesture(void)
     gesture_state curr_gesture_state = GESTURE_START;
     
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    int16_t move_x_initial = euler.x();
+    int move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
-    int16_t move_y_initial = euler.y();
-    int16_t move_z_initial = euler.z();
+    int move_y_initial = euler.y();
+    int move_z_initial = euler.z();
 
-    int16_t greatest_x = move_x_initial;
-    int16_t least_x = move_x_initial;
-    int16_t greatest_y = move_y_initial;
-    int16_t least_y = move_y_initial;
+    int greatest_x = move_x_initial;
+    int least_x = move_x_initial;
+    int greatest_y = move_y_initial;
+    int least_y = move_y_initial;
   
   
   
@@ -507,10 +507,10 @@ void process_gesture(void)
 //        delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-        int16_t move_x = euler.x();
+        int move_x = euler.x();
         move_x = normalize(move_x);
-        int16_t move_y = euler.y();
-        int16_t move_z = euler.z();
+        int move_y = euler.y();
+        int move_z = euler.z();
 
         // Update things
         if (move_x > greatest_x) greatest_x = move_x;
@@ -636,7 +636,7 @@ void process_gesture(void)
 //    }
 
 //  // 
-//  volatile int16_t temp;
+//  volatile int temp;
 //  
 //  // Hang until hand returns to initial x position 
 //  do {
