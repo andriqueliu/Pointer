@@ -90,7 +90,7 @@
 #define BNO055_SAMPLERATE_DELAY_MS (100)
 #define MOVETHRESHOLD (3)
 #define MOVETHRESHOLD_Y (8)
-#define MAX_MOVEMENT (100)
+#define MAXMOVE (100)
 
 // Constants used to influence mouse movement
 //#define CONSTANT_A 2
@@ -153,7 +153,7 @@ void setup(void)
   constant_a = 1;
   constant_b = 7;
 
-  // Declare initial value on
+  // Declare initial value on on
   on = true;
 
   // Hang until connection with BNO055 has been established
@@ -277,17 +277,13 @@ void loop(void)
  */
 void process_reset(void)
 {
-//  if (RESET) {
-//    // Toggle BNO055's reset input
-//    digitalWrite(5, LOW);
-//    digitalWrite(5, HIGH);
-//    on = !on;
-//    // Run the BNO055's initialization sequence
-//    bno.begin();  
-//  }
-
   if (RESET) {
-  on = !on;
+    // Toggle BNO055's reset input
+    digitalWrite(5, LOW);
+    digitalWrite(5, HIGH);
+    on = !on;
+    // Run the BNO055's initialization sequence
+    bno.begin();  
   }
 }
 
@@ -387,10 +383,10 @@ int16_t process_move_x(int16_t current_move)
   }
 
   // put a limit on final movement value
-  if (final > MAX_MOVEMENT) {
-    final = MAX_MOVEMENT;
-  } else if (final < -MAX_MOVEMENT) {
-    final = -MAX_MOVEMENT;
+  if (final > 100) {
+    final = 100;
+  } else if (final < -100) {
+    final = -100;            
   }
   
 
@@ -425,10 +421,10 @@ int16_t process_move_y(int16_t current_move)
   }
   
   // put a limit on final movement value
-  if (final > MAX_MOVEMENT) {
-    final = MAX_MOVEMENT;
-  } else if (final < -MAX_MOVEMENT) {
-    final = -MAX_MOVEMENT;            
+  if (final > 100) {
+    final = 100;
+  } else if (final < -100) {
+    final = -100;            
   }
   
   
@@ -493,12 +489,12 @@ void process_gesture(void)
   
   
   
-//  Serial.print(move_x_initial);
-//  Serial.print(' ');
-//  Serial.print(move_y_initial);
-//  Serial.print(' ');
-//  Serial.print(move_z_initial);
-//  Serial.println();
+  Serial.print(move_x_initial);
+  Serial.print(' ');
+  Serial.print(move_y_initial);
+  Serial.print(' ');
+  Serial.print(move_z_initial);
+  Serial.println();
 
 
     while (GESTURE_MODE) {
