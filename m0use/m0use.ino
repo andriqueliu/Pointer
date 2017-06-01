@@ -37,24 +37,24 @@
 /*=========================================================================
     APPLICATION SETTINGS
 
-      FACTORYRESET_ENABLE     Perform a factory reset when running this sketch
-     
-                              Enabling this will put your Bluefruit LE module
+      FACTORYRESET_ENABLE     Perform a factory reset when running this sketch
+     
+                              Enabling this will put your Bluefruit LE module
                             in a 'known good' state and clear any config
                             data set in previous sketches or projects, so
-                              running this at least once is a good idea.
-     
-                              When deploying your project, however, you will
+                              running this at least once is a good idea.
+     
+                              When deploying your project, however, you will
                             want to disable factory reset by setting this
-                            value to 0.  If you are making changes to your
-                              Bluefruit LE device via AT commands, and those
+                            value to 0.  If you are making changes to your
+                              Bluefruit LE device via AT commands, and those
                             changes aren't persisting across resets, this
-                            is the reason why.  Factory reset will erase
+                            is the reason why.  Factory reset will erase
                             the non-volatile memory where config data is
                             stored, setting it back to factory default
                             values.
-         
-                              Some sketches that require you to bond to a
+         
+                              Some sketches that require you to bond to a
                             central device (HID mouse, keyboard, etc.)
                             won't work at all with this feature enabled
                             since the factory reset will clear all of the
@@ -90,7 +90,7 @@
 #define BNO055_SAMPLERATE_DELAY_MS (100)
 #define MOVETHRESHOLD (3)
 #define MOVETHRESHOLD_Y (8)
-#define MAXMOVE (100)
+#define MAX_MOVEMENT (100)
 
 // Constants used to influence mouse movement
 //#define CONSTANT_A 2
@@ -124,12 +124,10 @@ void error(const __FlashStringHelper*err) {
 
 // Global Variables:
 
-int constant_a;
-int constant_b;
+int16_t constant_a;
+int16_t constant_b;
 
-// 0: Unpaused
-// 1: Paused
-int pause_mode;
+boolean on;
 
 /**************************************************************************/
 /*!
@@ -154,7 +152,9 @@ void setup(void)
   // Declare initial values of constants A and B
   constant_a = 1;
   constant_b = 7;
-  pause_mode = 0;
+
+  // Declare initial value on
+  on = true;
 
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
@@ -243,24 +243,24 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-  // 
-  if (!pause_mode) {
+  // Even a 10 ms delay makes the mouse unusable
+  //delay(BNO055_SAMPLERATE_DELAY_MS);
+  if (on) {
     if (!GESTURE_MODE) {
       process_click();
       process_move();
     } else {
       process_gesture();
     }
-  } else {
-    // Do nothing
   }
+  process_reset();
 
 //  delay(100);
 //  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-//  int move_x = euler.x();
+//  int16_t move_x = euler.x();
 //  move_x = normalize(move_x);
-//  int move_y = euler.y();
-//  int move_z = euler.z();
+//  int16_t move_y = euler.y();
+//  int16_t move_z = euler.z();
 //
 //  Serial.print(move_x);
 //  Serial.print(' ');
@@ -277,8 +277,17 @@ void loop(void)
  */
 void process_reset(void)
 {
+//  if (RESET) {
+//    // Toggle BNO055's reset input
+//    digitalWrite(5, LOW);
+//    digitalWrite(5, HIGH);
+//    on = !on;
+//    // Run the BNO055's initialization sequence
+//    bno.begin();  
+//  }
+
   if (RESET) {
-    pause_mode ^= 1;
+  on = !on;
   }
 }
 
@@ -287,8 +296,8 @@ void process_reset(void)
  */
 void process_move(void)
 {
-  int move_x;
-  int move_y;
+  int16_t move_x;
+  int16_t move_y;
 
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   move_x = euler.x();
@@ -331,7 +340,7 @@ void process_move(void)
  * @param value value to be normalized
  * @return normalized value
  */
-int normalize(int value)
+int16_t normalize(int16_t value)
 {
     if (value >= 0 && value <= 179) {
         // Do nothing
@@ -345,10 +354,10 @@ int normalize(int value)
 /*
  * 
  */
-int process_move_x(int current_move)
+int16_t process_move_x(int16_t current_move)
 {
-  static int prev_move_x = current_move;
-  int current_diff = current_move - prev_move_x;
+  static int16_t prev_move_x = current_move;
+  int16_t current_diff = current_move - prev_move_x;
 //  Serial.print("current_move: ");
 //  Serial.println(current_move);
 //
@@ -360,7 +369,7 @@ int process_move_x(int current_move)
   
   prev_move_x = current_move;
 
-  int final;
+  int16_t final;
   
   if (current_diff >= 0) {
     final = (current_diff) + ((current_diff * current_diff) * constant_b);
@@ -368,26 +377,20 @@ int process_move_x(int current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
-//  // !!! Lower the minimum movement
-//  if (final > 4 && final < 7) {
-//    return 1;
-//  } else if (final < -4 && final > -7) {
-//    return -1;
-//  } else if (final <= 4 && final >= -4) {
-//    return 0;
-//  }
-//
-//  // put a limit on final movement value
-//  if (final > 100) {
-//    final = 100;
-//  } else if (final < -100) {
-//    final = -100;            
-//  }
-
-  if (final == 2) {
+  // !!! Lower the minimum movement
+  if (final > 4 && final < 7) {
     return 1;
-  } else if (final == -2) {
+  } else if (final < -4 && final > -7) {
     return -1;
+  } else if (final <= 4 && final >= -4) {
+    return 0;
+  }
+
+  // put a limit on final movement value
+  if (final > MAX_MOVEMENT) {
+    final = MAX_MOVEMENT;
+  } else if (final < -MAX_MOVEMENT) {
+    final = -MAX_MOVEMENT;
   }
   
 
@@ -397,14 +400,14 @@ int process_move_x(int current_move)
 /*
  * 
  */
-int process_move_y(int current_move)
+int16_t process_move_y(int16_t current_move)
 {
-  static int prev_move_y = current_move;
-  int current_diff = current_move - prev_move_y;
+  static int16_t prev_move_y = current_move;
+  int16_t current_diff = current_move - prev_move_y;
   
   prev_move_y = current_move;
   
-  int final;
+  int16_t final;
   
   if (current_diff >= 0) {
     final = (current_diff) + ((current_diff * current_diff) * constant_b);
@@ -412,27 +415,22 @@ int process_move_y(int current_move)
     final = (current_diff) - ((current_diff * current_diff) * constant_b);
   }
 
-//  // !!! Lower the minimum movement
-//  if (final > 4 && final < 7) {
-//    return 1;
-//  } else if (final < -4 && final > -7) {
-//    return -1;
-//  } else if (final <= 4 && final >= -4) {
-//    return 0;
-//  }
-//  
-//  // put a limit on final movement value
-//  if (final > 100) {
-//    final = 100;
-//  } else if (final < -100) {
-//    final = -100;            
-//  }
-
-  if (final == 2) {
+  // !!! Lower the minimum movement
+  if (final > 4 && final < 7) {
     return 1;
-  } else if (final == -2) {
+  } else if (final < -4 && final > -7) {
     return -1;
+  } else if (final <= 4 && final >= -4) {
+    return 0;
   }
+  
+  // put a limit on final movement value
+  if (final > MAX_MOVEMENT) {
+    final = MAX_MOVEMENT;
+  } else if (final < -MAX_MOVEMENT) {
+    final = -MAX_MOVEMENT;            
+  }
+  
   
   return final;
 }
@@ -482,35 +480,35 @@ void process_gesture(void)
     gesture_state curr_gesture_state = GESTURE_START;
     
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    int move_x_initial = euler.x();
+    int16_t move_x_initial = euler.x();
     move_x_initial = normalize(move_x_initial);
-    int move_y_initial = euler.y();
-    int move_z_initial = euler.z();
+    int16_t move_y_initial = euler.y();
+    int16_t move_z_initial = euler.z();
 
-    int greatest_x = move_x_initial;
-    int least_x = move_x_initial;
-    int greatest_y = move_y_initial;
-    int least_y = move_y_initial;
+    int16_t greatest_x = move_x_initial;
+    int16_t least_x = move_x_initial;
+    int16_t greatest_y = move_y_initial;
+    int16_t least_y = move_y_initial;
   
   
   
   
-  Serial.print(move_x_initial);
-  Serial.print(' ');
-  Serial.print(move_y_initial);
-  Serial.print(' ');
-  Serial.print(move_z_initial);
-  Serial.println();
+//  Serial.print(move_x_initial);
+//  Serial.print(' ');
+//  Serial.print(move_y_initial);
+//  Serial.print(' ');
+//  Serial.print(move_z_initial);
+//  Serial.println();
 
 
     while (GESTURE_MODE) {
 //        delay(10); // Wait 10 ms !!! Experiment with this pls. Worked for mbed but won't necessarily
                    // work for the M0.
         imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-        int move_x = euler.x();
+        int16_t move_x = euler.x();
         move_x = normalize(move_x);
-        int move_y = euler.y();
-        int move_z = euler.z();
+        int16_t move_y = euler.y();
+        int16_t move_z = euler.z();
 
         // Update things
         if (move_x > greatest_x) greatest_x = move_x;
@@ -636,7 +634,7 @@ void process_gesture(void)
 //    }
 
 //  // 
-//  volatile int temp;
+//  volatile int16_t temp;
 //  
 //  // Hang until hand returns to initial x position 
 //  do {
