@@ -369,11 +369,21 @@ int16_t process_move_x(int16_t current_move)
   }
 
   // !!! Lower the minimum movement
-  if (final == 2) {
+  if (final > 4 && final < 7) {
     return 1;
-  } else if (final == -2) {
+  } else if (final < -4 && final > -7) {
     return -1;
+  } else if (final <= 4 && final >= -4) {
+    return 0;
   }
+
+  // put a limit on final movement value
+  if (final > 100) {
+    final = 100;
+  } else if (final < -100) {
+    final = -100;            
+  }
+  
 
   return final;
 }
@@ -397,11 +407,21 @@ int16_t process_move_y(int16_t current_move)
   }
 
   // !!! Lower the minimum movement
-  if (final == 2) {
+  if (final > 4 && final < 7) {
     return 1;
-  } else if (final == -2) {
+  } else if (final < -4 && final > -7) {
     return -1;
+  } else if (final <= 4 && final >= -4) {
+    return 0;
   }
+  
+  // put a limit on final movement value
+  if (final > 100) {
+    final = 100;
+  } else if (final < -100) {
+    final = -100;            
+  }
+  
   
   return final;
 }
