@@ -127,6 +127,9 @@ void error(const __FlashStringHelper*err) {
 int16_t constant_a;
 int16_t constant_b;
 
+// 0: Unpaused
+// 1: Paused
+int pause_mode;
 
 /**************************************************************************/
 /*!
@@ -151,6 +154,7 @@ void setup(void)
   // Declare initial values of constants A and B
   constant_a = 1;
   constant_b = 7;
+  pause_mode = 0;
 
   // Hang until connection with BNO055 has been established
   if(!bno.begin())
@@ -239,16 +243,17 @@ while (1) {
 /**************************************************************************/
 void loop(void)
 {
-  // Even a 10 ms delay makes the mouse unusable
-  //delay(BNO055_SAMPLERATE_DELAY_MS);
-  if (!GESTURE_MODE) {
-    process_click();
-    process_move();
+  // 
+  if (!pause_mode) {
+    if (!GESTURE_MODE) {
+      process_click();
+      process_move();
+    } else {
+      process_gesture();
+    }
   } else {
-    process_gesture();
+    // Do nothing
   }
-  
-  process_reset();
 
 //  delay(100);
 //  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -273,12 +278,7 @@ void loop(void)
 void process_reset(void)
 {
   if (RESET) {
-    // Toggle BNO055's reset input
-    digitalWrite(5, LOW);
-    digitalWrite(5, HIGH);
-
-    // Run the BNO055's initialization sequence
-    bno.begin();  
+    pause_mode ^= 1;
   }
 }
 
