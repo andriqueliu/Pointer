@@ -1,0 +1,1 @@
+When clicking, increase movement threshold... this means that dragging will take more effort (natural), and it's harder to do a "non-click"
